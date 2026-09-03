@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Schedules{% endblock %}
+{% block page_title %}Medication Schedules{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <p class="text-muted mb-0">View and manage all medication schedules</p>
+    <a href="/schedules/add" class="btn btn-primary"><i class="bi bi-plus-lg me-2"></i>Add Schedule</a>
+</div>
+
+<!-- Filter -->
+<div class="card p-3 mb-4">
+    <div class="row g-2">
+        <div class="col-md-4">
+            <select class="form-select" id="filter-elder">
+                <option value="">All Elders</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<!-- Schedules Table -->
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Time</th>
+                    <th>Elder</th>
+                    <th>Medicine</th>
+                    <th>Dosage</th>
+                    <th>Recurrence</th>
+                    <th>Meal Timing</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="schedules-tbody">
+                <tr><td colspan="9" class="text-center py-5">
+                    <div class="spinner-healthcare mx-auto"></div>
+                </td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/schedule.js') }}"></script>
+{% endblock %}

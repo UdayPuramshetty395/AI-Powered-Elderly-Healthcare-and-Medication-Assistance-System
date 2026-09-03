@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Add Schedule{% endblock %}
+{% block page_title %}Add Medication Schedule{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-2 mb-4">
+    <a href="/schedules" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <span class="text-muted">Back to Schedules</span>
+</div>
+
+<div class="row">
+    <div class="col-lg-7">
+        <div class="card p-4">
+            <h5 class="fw-700 mb-4"><i class="bi bi-calendar-plus me-2 text-primary"></i>New Medication Schedule</h5>
+            <form id="add-schedule-form" novalidate>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Select Elder *</label>
+                        <select class="form-select" id="elder_id" required>
+                            <option value="">Choose elder...</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Select Medicine *</label>
+                        <select class="form-select" id="medicine_id" required disabled>
+                            <option value="">Select elder first...</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Scheduled Time *</label>
+                        <input type="time" class="form-control" id="scheduled_time" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Recurrence *</label>
+                        <select class="form-select" id="recurrence">
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                            <option value="as_needed">As Needed</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6" id="day-of-week-group">
+                        <label class="form-label">Day of Week</label>
+                        <select class="form-select" id="day_of_week">
+                            <option value="all">Every Day</option>
+                            <option value="monday">Monday</option>
+                            <option value="tuesday">Tuesday</option>
+                            <option value="wednesday">Wednesday</option>
+                            <option value="thursday">Thursday</option>
+                            <option value="friday">Friday</option>
+                            <option value="saturday">Saturday</option>
+                            <option value="sunday">Sunday</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Meal Timing</label>
+                        <select class="form-select" id="meal_timing">
+                            <option value="anytime">Anytime</option>
+                            <option value="before_meal">Before Meal</option>
+                            <option value="with_meal">With Meal</option>
+                            <option value="after_meal">After Meal</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" rows="2" placeholder="Additional schedule notes..."></textarea>
+                    </div>
+                </div>
+                <div class="d-flex gap-3 mt-4">
+                    <button type="submit" class="btn btn-primary px-4" id="submit-btn">
+                        <i class="bi bi-calendar-check me-2"></i>Create Schedule
+                    </button>
+                    <a href="/schedules" class="btn btn-outline-secondary px-4">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card p-4" style="background:#e8f5e9;border:1px solid #c8e6c9">
+            <h6 class="fw-700 mb-3"><i class="bi bi-info-circle me-2 text-success"></i>Schedule Tips</h6>
+            <ul class="list-unstyled small text-muted">
+                <li class="mb-2">⏰ Set accurate times for better reminder delivery</li>
+                <li class="mb-2">🍽️ Meal timing significantly affects medicine effectiveness</li>
+                <li class="mb-2">📅 Use "Every Day" for consistent daily medications</li>
+                <li class="mb-2">💊 Each scheduled time creates individual dose tracking</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/schedule.js') }}"></script>
+{% endblock %}

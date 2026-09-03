@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}AI Health Assistant{% endblock %}
+{% block page_title %}AI Health Assistant{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Chat Panel -->
+    <div class="col-lg-8">
+        <div class="card p-4" style="height:calc(100vh - 200px)">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width:40px;height:40px;background:linear-gradient(135deg,#1976d2,#26a69a);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white">
+                        <i class="bi bi-robot"></i>
+                    </div>
+                    <div>
+                        <div class="fw-700">HealthBot AI</div>
+                        <div class="d-flex align-items-center gap-1">
+                            <div style="width:8px;height:8px;background:#43a047;border-radius:50%"></div>
+                            <small class="text-muted">Online • Ready to help</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <select class="form-select form-select-sm" id="language-select" style="min-width:120px;padding-right:32px">
+                        <option value="en">English</option>
+                        <option value="te">Telugu</option>
+                    </select>
+                    <button id="clear-chat" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            <div class="chat-messages flex-1" id="chat-messages">
+                <div class="message-bubble assistant">
+                    <div class="message-content">
+                        👋 Hello! I'm your AI Healthcare Assistant. I can help you with:<br><br>
+                        • 💊 Medication information and dosing<br>
+                        • ⚠️ Side effects and drug interactions<br>
+                        • 🩺 Health tips for blood pressure and diabetes<br>
+                        • 🥗 Diet and nutrition guidance<br>
+                        • ❓ Missed dose guidance<br><br>
+                        What health question can I help you with today?
+                    </div>
+                    <div class="message-time">Now</div>
+                </div>
+            </div>
+
+            <!-- Suggestions Panel -->
+            <div class="suggestions-panel" id="suggestions-panel"></div>
+
+            <!-- Input Area -->
+            <div class="chat-input-area">
+                <form id="chat-form" class="d-flex gap-2">
+                    <div class="flex-1 position-relative">
+                        <input type="text" class="form-control pe-5" id="chat-input"
+                               placeholder="Ask a health question..." autocomplete="off">
+                    </div>
+                    <button type="button" id="voice-btn" class="voice-btn" title="Voice Input">
+                        <i class="bi bi-mic-fill"></i>
+                        <span class="d-none d-sm-inline">Voice</span>
+                    </button>
+                    <button type="submit" id="send-btn" class="btn btn-primary px-4" disabled>
+                        <i class="bi bi-send-fill"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Panel: Context + Info -->
+    <div class="col-lg-4">
+        <!-- Elder Context -->
+        <div class="card p-4 mb-4">
+            <h6 class="fw-700 mb-3"><i class="bi bi-person me-2 text-primary"></i>Patient Context</h6>
+            <select class="form-select mb-3" id="elder-context-select">
+                <option value="">No specific patient</option>
+            </select>
+            <div id="elder-context-info" class="small text-muted">
+                Select a patient to get personalized health advice based on their medications and conditions.
+            </div>
+        </div>
+
+        <!-- Quick Tips -->
+        <div class="card p-4">
+            <h6 class="fw-700 mb-3"><i class="bi bi-lightbulb me-2 text-warning"></i>Quick Health Tips</h6>
+            <div class="d-flex flex-column gap-2 small text-muted">
+                <div class="p-2 rounded" style="background:#e3f2fd">💊 Take medications at the same time daily for best results</div>
+                <div class="p-2 rounded" style="background:#e8f5e9">🚰 Stay hydrated - 6-8 glasses of water daily</div>
+                <div class="p-2 rounded" style="background:#fff8e1">🧂 Limit sodium intake for blood pressure control</div>
+                <div class="p-2 rounded" style="background:#fce4ec">⚠️ Never stop medications without consulting a doctor</div>
+            </div>
+            <small class="text-muted mt-3 d-block" style="font-size:10px">
+                ⚕️ This AI provides general health information only. Always consult your healthcare provider for medical decisions.
+            </small>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
+<script>
+// Load elders for context selector
+document.addEventListener('DOMContentLoaded', async () => {
+    const select = document.getElementById('elder-context-select');
+    const data = await API.get('/elders?per_page=100');
+    if (data && data._ok) {
+        select.innerHTML = '<option value="">No specific patient</option>' +
+            data.elders.map(e => `<option value="${e.id}">${e.name} (${e.age}y)</option>`).join('');
+    }
+    
+    select.addEventListener('change', async () => {
+        selectedElder = select.value ? parseInt(select.value) : null;
+        const infoDiv = document.getElementById('elder-context-info');
+        if (!selectedElder) {
+            infoDiv.innerHTML = 'Select a patient to get personalized health advice.';
+            return;
+        }
+        const elderData = await API.get(`/elders/${selectedElder}`);
+        if (elderData && elderData._ok) {
+            const e = elderData.elder;
+            infoDiv.innerHTML = `
+                <strong>${e.name}</strong>, ${e.age} years<br>
+                ${e.medical_conditions ? `<span class="text-danger">Conditions: ${e.medical_conditions}</span><br>` : ''}
+                ${e.allergies ? `<span class="text-warning">⚠️ Allergies: ${e.allergies}</span>` : ''}
+            `;
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,41 @@
+# Render service template (example) — do not include secrets here
+services:
+  - type: web
+    name: elderly-healthcare-web
+    env: python
+    region: oregon
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python run.py"
+    plan: free
+    # Environment variables (example placeholders) - set actual values in Render's dashboard
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        value: "<set-in-secrets>"
+      - key: JWT_SECRET_KEY
+        value: "<set-in-secrets>"
+      - key: DATABASE_URL
+        value: "postgres://user:pass@host:5432/dbname"
+      - key: MAIL_USE_SMTP
+        value: "False"
+      - key: VAPID_PUBLIC_KEY
+        value: "<set-in-secrets>"
+      - key: VAPID_PRIVATE_KEY
+        value: "<set-in-secrets>"
+  - type: worker
+    name: elderly-healthcare-scheduler
+    env: python
+    region: oregon
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python run_scheduler.py"
+    plan: free
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        value: "<set-in-secrets>"
+      - key: JWT_SECRET_KEY
+        value: "<set-in-secrets>"
+      - key: DATABASE_URL
+        value: "postgres://user:pass@host:5432/dbname"

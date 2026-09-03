@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Powered Elderly Healthcare & Medication Assistance System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+<!-- Navigation -->
+<nav class="navbar navbar-expand-lg navbar-dark" style="background:rgba(13,33,55,0.95);backdrop-filter:blur(10px);position:fixed;width:100%;z-index:100">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+            <div style="width:36px;height:36px;background:linear-gradient(135deg,#1976d2,#26a69a);border-radius:8px;display:flex;align-items:center;justify-content:center;color:white">
+                <i class="bi bi-heart-pulse-fill"></i>
+            </div>
+            <span class="fw-bold">ElderCare AI</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navMain">
+            <ul class="navbar-nav ms-auto gap-2">
+                <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
+                <li class="nav-item"><a class="nav-link" href="#how-it-works">How It Works</a></li>
+                <li class="nav-item"><a class="btn btn-outline-light btn-sm px-4" href="/login">Login</a></li>
+                <li class="nav-item"><a class="btn btn-primary btn-sm px-4" href="/register">Get Started</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container" style="position:relative;z-index:2">
+        <div class="row align-items-center min-vh-100">
+            <div class="col-lg-6" style="padding-top:80px">
+                <div class="d-inline-flex align-items-center gap-2 mb-4 px-3 py-2 rounded-pill" 
+                     style="background:rgba(255,255,255,0.1);backdrop-filter:blur(10px)">
+                    <i class="bi bi-stars text-warning"></i>
+                    <span style="color:rgba(255,255,255,0.9);font-size:14px">AI-Powered Healthcare Platform</span>
+                </div>
+                <h1 class="hero-title mb-4">
+                    Smart Medication<br>
+                    <span style="color:#4dd0e1">Management</span> for<br>
+                    Elderly Care
+                </h1>
+                <p class="hero-subtitle mb-5">
+                    Comprehensive AI-powered system for tracking medications, monitoring adherence, 
+                    voice reminders in Telugu & English, and intelligent health assistance for your loved ones.
+                </p>
+                <div class="d-flex gap-3 flex-wrap">
+                    <a href="/register" class="btn btn-white btn-lg px-5" 
+                       style="background:white;color:#1976d2;font-weight:700;border-radius:12px">
+                        <i class="bi bi-rocket-takeoff me-2"></i>Start Free
+                    </a>
+                    <a href="/login" class="btn btn-lg px-5" 
+                       style="background:rgba(255,255,255,0.15);color:white;border:2px solid rgba(255,255,255,0.3);border-radius:12px;backdrop-filter:blur(10px)">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+                    </a>
+                </div>
+                <!-- Stats -->
+                <div class="row mt-5 g-4">
+                    <div class="col-4">
+                        <div class="text-center">
+                            <div style="font-size:28px;font-weight:800;color:white">98%</div>
+                            <div style="color:rgba(255,255,255,0.7);font-size:13px">Reminder Accuracy</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-center">
+                            <div style="font-size:28px;font-weight:800;color:white">2</div>
+                            <div style="color:rgba(255,255,255,0.7);font-size:13px">Languages Supported</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-center">
+                            <div style="font-size:28px;font-weight:800;color:white">24/7</div>
+                            <div style="color:rgba(255,255,255,0.7);font-size:13px">Monitoring</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 d-none d-lg-flex justify-content-center" style="padding-top:80px">
+                <div style="position:relative">
+                    <!-- Dashboard Preview Card -->
+                    <div class="card p-4" style="width:380px;border-radius:20px;box-shadow:0 30px 80px rgba(0,0,0,0.4)">
+                        <div class="d-flex align-items-center justify-content-between mb-4">
+                            <div>
+                                <h5 class="mb-0 fw-bold">Today's Summary</h5>
+                                <small class="text-muted">Real-time monitoring</small>
+                            </div>
+                            <span class="badge bg-success">Live</span>
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-6"><div class="p-3 rounded-3" style="background:#e3f2fd"><div style="font-size:22px;font-weight:800;color:#1976d2">5</div><small class="text-muted">Elders Monitored</small></div></div>
+                            <div class="col-6"><div class="p-3 rounded-3" style="background:#e8f5e9"><div style="font-size:22px;font-weight:800;color:#43a047">12</div><small class="text-muted">Doses Today</small></div></div>
+                            <div class="col-6"><div class="p-3 rounded-3" style="background:#fff8e1"><div style="font-size:22px;font-weight:800;color:#fb8c00">87%</div><small class="text-muted">Adherence Rate</small></div></div>
+                            <div class="col-6"><div class="p-3 rounded-3" style="background:#ffebee"><div style="font-size:22px;font-weight:800;color:#e53935">2</div><small class="text-muted">Alerts</small></div></div>
+                        </div>
+                        <div class="d-flex align-items-center gap-3 p-3 rounded-3" style="background:#f8fafc">
+                            <div style="width:40px;height:40px;background:#e3f2fd;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#1976d2">
+                                <i class="bi bi-capsule"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="fw-600">Metformin 500mg</div>
+                                <small class="text-muted">Ramu Naidu • 08:00 AM</small>
+                            </div>
+                            <span class="badge" style="background:#e8f5e9;color:#2e7d32">Taken ✓</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section id="features" class="py-5" style="background:#f8fafc">
+    <div class="container py-4">
+        <div class="text-center mb-5">
+            <span class="badge bg-primary-subtle text-primary mb-3 px-3 py-2">Features</span>
+            <h2 class="fw-800 mb-3" style="font-size:36px">Everything You Need for<br>Elderly Medication Management</h2>
+            <p class="text-muted mx-auto" style="max-width:600px">A comprehensive platform designed specifically for caregivers and healthcare providers managing elderly patients' medications.</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon" style="background:#e3f2fd;color:#1976d2"><i class="bi bi-bell-fill" style="font-size:28px"></i></div>
+                    <h5 class="fw-700 mb-2">Smart Reminders</h5>
+                    <p class="text-muted">Automated voice reminders in Telugu and English using AI text-to-speech. Never miss a dose again.</p>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon" style="background:#e8f5e9;color:#43a047"><i class="bi bi-graph-up-arrow" style="font-size:28px"></i></div>
+                    <h5 class="fw-700 mb-2">Adherence Tracking</h5>
+                    <p class="text-muted">Visual dashboards and charts tracking medication adherence with color-coded status indicators.</p>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon" style="background:#fff8e1;color:#fb8c00"><i class="bi bi-exclamation-triangle-fill" style="font-size:28px"></i></div>
+                    <h5 class="fw-700 mb-2">Missed Dose Alerts</h5>
+                    <p class="text-muted">Automatic alerts to caretakers when doses are missed. 30-minute threshold with escalation logic.</p>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon" style="background:#f3e5f5;color:#7b1fa2"><i class="bi bi-chat-dots-fill" style="font-size:28px"></i></div>
+                    <h5 class="fw-700 mb-2">AI Health Assistant</h5>
+                    <p class="text-muted">Intelligent chatbot answering health queries about medications, side effects, diet, and more.</p>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon" style="background:#e0f2f1;color:#00796b"><i class="bi bi-people-fill" style="font-size:28px"></i></div>
+                    <h5 class="fw-700 mb-2">Multi-Elder Support</h5>
+                    <p class="text-muted">Manage multiple elderly patients from a single dashboard. Assign caretakers and family members.</p>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon" style="background:#fce4ec;color:#c62828"><i class="bi bi-shield-fill-check" style="font-size:28px"></i></div>
+                    <h5 class="fw-700 mb-2">Secure & Private</h5>
+                    <p class="text-muted">JWT authentication, role-based access control, encrypted data storage for complete privacy.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works -->
+<section id="how-it-works" class="py-5">
+    <div class="container py-4">
+        <div class="text-center mb-5">
+            <h2 class="fw-800 mb-3" style="font-size:36px">How It Works</h2>
+            <p class="text-muted">Three simple steps to better medication management</p>
+        </div>
+        <div class="row g-4 align-items-center">
+            <div class="col-lg-4 text-center">
+                <div class="rounded-circle mx-auto mb-4 d-flex align-items-center justify-content-center" 
+                     style="width:80px;height:80px;background:linear-gradient(135deg,#1976d2,#1565c0);color:white;font-size:32px;font-weight:800">1</div>
+                <h5 class="fw-700">Register & Setup</h5>
+                <p class="text-muted">Create an account, add elder profiles with their medical history, conditions, and allergies.</p>
+            </div>
+            <div class="col-lg-4 text-center">
+                <div class="rounded-circle mx-auto mb-4 d-flex align-items-center justify-content-center"
+                     style="width:80px;height:80px;background:linear-gradient(135deg,#26a69a,#00796b);color:white;font-size:32px;font-weight:800">2</div>
+                <h5 class="fw-700">Add Medicines & Schedules</h5>
+                <p class="text-muted">Enter prescribed medicines and create personalized dosing schedules with meal timing preferences.</p>
+            </div>
+            <div class="col-lg-4 text-center">
+                <div class="rounded-circle mx-auto mb-4 d-flex align-items-center justify-content-center"
+                     style="width:80px;height:80px;background:linear-gradient(135deg,#fb8c00,#e65100);color:white;font-size:32px;font-weight:800">3</div>
+                <h5 class="fw-700">Monitor & Track</h5>
+                <p class="text-muted">Receive reminders, track adherence, get AI health insights, and stay notified of any missed doses.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-5" style="background:linear-gradient(135deg,#0d2137,#1976d2)">
+    <div class="container py-4 text-center">
+        <h2 class="fw-800 text-white mb-3" style="font-size:36px">Ready to Give Your Loved Ones<br>Better Care?</h2>
+        <p class="text-white-50 mb-4">Join thousands of caregivers using AI-powered medication management</p>
+        <div class="d-flex gap-3 justify-content-center">
+            <a href="/register" class="btn btn-lg px-5" style="background:white;color:#1976d2;font-weight:700;border-radius:12px">
+                <i class="bi bi-rocket-takeoff me-2"></i>Get Started Free
+            </a>
+            <a href="/login" class="btn btn-lg btn-outline-light px-5" style="border-radius:12px">Sign In</a>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="py-4" style="background:#0d2137;color:rgba(255,255,255,0.6)">
+    <div class="container text-center">
+        <p class="mb-0">© 2024 AI-Powered Elderly Healthcare System. Built with ❤️ for better elderly care.</p>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    if (TokenManager.isLoggedIn()) {
+        window.location.href = '/dashboard';
+    }
+});
+</script>
+</body>
+</html>

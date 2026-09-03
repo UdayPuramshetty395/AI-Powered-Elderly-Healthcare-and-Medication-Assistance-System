@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Profile — Account Settings{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card p-4 mb-4">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <div>
+                    <h5 class="fw-700 mb-1"><i class="bi bi-person-circle me-2 text-primary"></i>Profile Information</h5>
+                    <p class="text-muted small mb-0">Update your name and contact details.</p>
+                </div>
+                <span class="badge bg-secondary" id="profile-role">Role</span>
+            </div>
+
+            <form id="profile-form" onsubmit="event.preventDefault(); saveProfile();">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-600">Username</label>
+                        <input type="text" class="form-control" id="profile-username" readonly>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-600">Email</label>
+                        <input type="email" class="form-control" id="profile-email" readonly>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-600">Full Name</label>
+                        <input type="text" class="form-control" id="profile-full-name" placeholder="Your full name" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-600">Phone</label>
+                        <input type="text" class="form-control" id="profile-phone" placeholder="Enter phone number">
+                    </div>
+                </div>
+                <div class="mt-4 d-flex gap-2">
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-save me-2"></i>Save Profile</button>
+                    <span id="profile-status" class="align-self-center text-muted"></span>
+                </div>
+            </form>
+        </div>
+
+        <div class="card p-4">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <div>
+                    <h5 class="fw-700 mb-1"><i class="bi bi-key-fill me-2 text-warning"></i>Change Password</h5>
+                    <p class="text-muted small mb-0">Update your password for account security.</p>
+                </div>
+            </div>
+
+            <form id="password-form" onsubmit="event.preventDefault(); changePassword();">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-600">Current Password</label>
+                        <input type="password" class="form-control" id="current-password" placeholder="Current password" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-600">New Password</label>
+                        <input type="password" class="form-control" id="new-password" placeholder="New password" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-600">Confirm New Password</label>
+                        <input type="password" class="form-control" id="confirm-password" placeholder="Confirm new password" required>
+                    </div>
+                </div>
+                <div class="mt-4 d-flex gap-2">
+                    <button class="btn btn-warning" type="submit"><i class="bi bi-lock-fill me-2"></i>Change Password</button>
+                    <span id="password-status" class="align-self-center text-muted"></span>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    if (!requireAuth()) return;
+    loadProfile();
+});
+
+async function loadProfile() {
+    const data = await API.get('/auth/me');
+    if (!data || !data._ok || !data.user) {
+        Toast.error('Unable to load profile. Please refresh.');
+        return;
+    }
+
+    const user = data.user;
+    document.getElementById('profile-username').value = user.username || '';
+    document.getElementById('profile-email').value = user.email || '';
+    document.getElementById('profile-full-name').value = user.full_name || '';
+    document.getElementById('profile-phone').value = user.phone || '';
+    document.getElementById('profile-role').textContent = user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'User';
+}
+
+async function saveProfile() {
+    const fullName = document.getElementById('profile-full-name').value.trim();
+    const phone = document.getElementById('profile-phone').value.trim();
+    const status = document.getElementById('profile-status');
+
+    status.textContent = 'Saving...';
+    const data = await API.put('/auth/profile', { full_name: fullName, phone });
+    if (data && data._ok) {
+        TokenManager.setUser(data.user);
+        status.textContent = 'Saved successfully.';
+        Toast.success('Profile updated successfully');
+        setTimeout(() => status.textContent = '', 3000);
+        return;
+    }
+    status.textContent = '';
+    Toast.error(data?.error || 'Failed to save profile');
+}
+
+async function changePassword() {
+    const currentPassword = document.getElementById('current-password').value.trim();
+    const newPassword = document.getElementById('new-password').value.trim();
+    const confirmPassword = document.getElementById('confirm-password').value.trim();
+    const status = document.getElementById('password-status');
+
+    if (newPassword !== confirmPassword) {
+        Toast.error('New password and confirmation do not match');
+        return;
+    }
+
+    status.textContent = 'Updating...';
+    const data = await API.put('/auth/change-password', { current_password: currentPassword, new_password: newPassword });
+    if (data && data._ok) {
+        status.textContent = 'Password changed.';
+        Toast.success('Password updated successfully');
+        document.getElementById('password-form').reset();
+        setTimeout(() => status.textContent = '', 3000);
+        return;
+    }
+    status.textContent = '';
+    Toast.error(data?.error || 'Failed to change password');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% block title %}Voice Reminders{% endblock %}
+{% block page_title %}Voice Reminders{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <p class="text-muted mb-0">Play medication reminders in English or Telugu for any elder.</p>
+</div>
+
+<!-- Elder Selector -->
+<div class="card p-4 mb-4">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-5">
+            <label class="form-label fw-600">Select Elder</label>
+            <select class="form-select" id="reminder-elder-select">
+                <option value="">Choose an elder...</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label fw-600">Language</label>
+            <div class="d-flex gap-2">
+                <button id="btn-lang-en" onclick="setLang('en')"
+                        class="btn btn-primary flex-fill">
+                    <i class="bi bi-translate me-1"></i> English
+                </button>
+                <button id="btn-lang-te" onclick="setLang('te')"
+                        class="btn btn-outline-primary flex-fill">
+                    <i class="bi bi-translate me-1"></i> Telugu
+                </button>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <button onclick="loadElderSchedules()" class="btn btn-success w-100">
+                <i class="bi bi-calendar3 me-1"></i> Load Schedules
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Today's Schedules with Voice Buttons -->
+<div id="schedules-section" style="display:none">
+    <h5 class="fw-700 mb-3"><i class="bi bi-clock me-2 text-primary"></i>Today's Medication Schedules</h5>
+    <div id="schedule-cards" class="row g-3"></div>
+</div>
+
+<!-- No schedules message -->
+<div id="no-schedules" class="card p-5 text-center" style="display:none">
+    <i class="bi bi-calendar-x" style="font-size:3rem;color:#ccc"></i>
+    <p class="text-muted mt-3">No schedules found for today. Please add a schedule first.</p>
+    <a href="/schedules/add" class="btn btn-primary mt-2">Add Schedule</a>
+</div>
+
+<!-- Voice Player Area -->
+<div class="card p-4 mt-4" id="voice-player-card" style="display:none">
+    <h6 class="fw-700 mb-3"><i class="bi bi-volume-up-fill me-2 text-success"></i>Now Playing</h6>
+    <div id="voice-player"></div>
+    <button onclick="stopVoice()" class="btn btn-sm btn-outline-danger mt-3">
+        <i class="bi bi-stop-fill me-1"></i> Stop
+    </button>
+</div>
+
+<!-- Quick Play All -->
+<div class="card p-4 mt-4" id="play-all-card" style="display:none">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h6 class="fw-700 mb-1">Play All Reminders</h6>
+            <small class="text-muted">Play voice reminder for all today's medicines at once</small>
+        </div>
+        <button onclick="playAllReminders()" class="btn btn-primary">
+            <i class="bi bi-play-circle-fill me-2"></i>Play All
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/voice.js') }}"></script>
+<script>
+let selectedLang = 'en';
+let elderSchedules = [];
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (!requireAuth()) return;
+    loadEldersForReminders();
+});
+
+function setLang(lang) {
+    selectedLang = lang;
+    document.getElementById('btn-lang-en').className = lang === 'en' ? 'btn btn-primary flex-fill' : 'btn btn-outline-primary flex-fill';
+    document.getElementById('btn-lang-te').className = lang === 'te' ? 'btn btn-primary flex-fill' : 'btn btn-outline-primary flex-fill';
+    Toast.info(lang === 'te' ? 'Telugu selected' : 'English selected');
+}
+
+async function loadEldersForReminders() {
+    const data = await API.get('/elders?per_page=100');
+    if (!data || !data._ok) return;
+    const select = document.getElementById('reminder-elder-select');
+    select.innerHTML = '<option value="">Choose an elder...</option>' +
+        data.elders.map(e => `<option value="${e.id}" data-name="${e.name}">${e.name} (Age: ${e.age})</option>`).join('');
+}
+
+async function loadElderSchedules() {
+    const select = document.getElementById('reminder-elder-select');
+    const elderId = select.value;
+    if (!elderId) { Toast.warning('Please select an elder first'); return; }
+
+    const elderName = select.options[select.selectedIndex].dataset.name;
+    const data = await API.get(`/schedules/today/${elderId}`);
+
+    document.getElementById('schedules-section').style.display = 'none';
+    document.getElementById('no-schedules').style.display = 'none';
+    document.getElementById('play-all-card').style.display = 'none';
+
+    if (!data || !data._ok || !data.schedules.length) {
+        document.getElementById('no-schedules').style.display = 'block';
+        return;
+    }
+
+    elderSchedules = data.schedules.map(s => ({
+        elderName,
+        medicineName: s.medicine_name,
+        dosage: s.medicine_dosage || '',
+        scheduledTime: Utils.formatTime(s.scheduled_time),
+        status: s.adherence_status || 'pending'
+    }));
+
+    const cards = elderSchedules.map((s, idx) => {
+        const statusColor = s.status === 'taken' ? 'success' : s.status === 'missed' ? 'danger' : 'warning';
+        const statusLabel = s.status === 'taken' ? 'Taken' : s.status === 'missed' ? 'Missed' : 'Pending';
+        return `
+        <div class="col-md-6 col-lg-4">
+            <div class="card p-3 h-100 border-start border-4 border-${statusColor}">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <h6 class="fw-700 mb-0">${s.medicineName}</h6>
+                        <small class="text-muted">${s.dosage}</small>
+                    </div>
+                    <span class="badge bg-${statusColor}-subtle text-${statusColor} border border-${statusColor}">${statusLabel}</span>
+                </div>
+                <div class="mb-3">
+                    <i class="bi bi-clock text-primary me-1"></i>
+                    <strong>${s.scheduledTime}</strong>
+                </div>
+                <div class="d-flex gap-2 mt-auto">
+                    <button onclick="playSingleReminder(${idx})" class="btn btn-sm btn-success flex-fill">
+                        <i class="bi bi-play-fill me-1"></i>
+                        <span id="btn-label-${idx}">Play</span>
+                    </button>
+                    <button onclick="playTeluguReminder(${idx})" class="btn btn-sm btn-outline-primary flex-fill">
+                        <i class="bi bi-translate me-1"></i> తెలుగు
+                    </button>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+
+    document.getElementById('schedule-cards').innerHTML = cards;
+    document.getElementById('schedules-section').style.display = 'block';
+    document.getElementById('play-all-card').style.display = 'block';
+}
+
+function playSingleReminder(idx) {
+    const s = elderSchedules[idx];
+    const btn = document.getElementById(`btn-label-${idx}`);
+    if (btn) btn.textContent = 'Playing...';
+    
+    showVoicePlayer(s.elderName, s.medicineName, s.dosage, s.scheduledTime, selectedLang);
+    playBrowserTTS(s.elderName, s.medicineName, s.dosage, s.scheduledTime, selectedLang);
+
+    setTimeout(() => { if (btn) btn.textContent = 'Play'; }, 6000);
+}
+
+function playTeluguReminder(idx) {
+    const s = elderSchedules[idx];
+    showVoicePlayer(s.elderName, s.medicineName, s.dosage, s.scheduledTime, 'te');
+    playBrowserTTS(s.elderName, s.medicineName, s.dosage, s.scheduledTime, 'te');
+}
+
+function playAllReminders() {
+    if (!elderSchedules.length) return;
+    Toast.info(`Playing ${elderSchedules.length} reminders...`);
+    
+    let idx = 0;
+    function playNext() {
+        if (idx >= elderSchedules.length) {
+            Toast.success('All reminders played!');
+            return;
+        }
+        const s = elderSchedules[idx];
+        showVoicePlayer(s.elderName, s.medicineName, s.dosage, s.scheduledTime, selectedLang);
+        
+        const text = selectedLang === 'te'
+            ? `${s.elderName} గారూ, మీరు ${s.medicineName} ${s.dosage} తీసుకోవాలి. సమయం ${s.scheduledTime}.`
+            : `${s.elderName}, it's time to take your ${s.medicineName} ${s.dosage}. Scheduled time is ${s.scheduledTime}.`;
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.85;
+        utterance.onend = () => { idx++; setTimeout(playNext, 1000); };
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utterance);
+    }
+    playNext();
+}
+
+function showVoicePlayer(elderName, medicineName, dosage, time, lang) {
+    const card = document.getElementById('voice-player-card');
+    const player = document.getElementById('voice-player');
+    card.style.display = 'block';
+    player.innerHTML = `
+        <div class="p-3 rounded" style="background:#e8f5e9">
+            <p class="mb-1"><i class="bi bi-person-fill text-primary me-1"></i><strong>${elderName}</strong></p>
+            <p class="mb-1"><i class="bi bi-capsule text-success me-1"></i>${medicineName} ${dosage}</p>
+            <p class="mb-1"><i class="bi bi-clock text-warning me-1"></i>${time}</p>
+            <p class="mb-0"><span class="badge bg-info">${lang === 'te' ? 'Telugu' : 'English'}</span>
+            <span class="badge bg-success ms-1"><i class="bi bi-volume-up me-1"></i>Speaking...</span></p>
+        </div>`;
+    card.scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+{% endblock %}

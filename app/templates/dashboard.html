@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Elderly Healthcare{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <p class="text-muted mb-0">Welcome back! Here's today's live healthcare overview.</p>
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-success-subtle text-success border border-success px-3 py-2">
+            <i class="bi bi-circle-fill me-1" style="font-size:8px;animation:blink 1.2s infinite"></i>
+            Live
+        </span>
+        <small class="text-muted" id="last-refreshed"></small>
+    </div>
+</div>
+
+<!-- Next Dose Countdown Banner -->
+<div class="card p-3 mb-4 border-start border-4 border-primary" id="next-dose-banner">
+    <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-blue" style="width:40px;height:40px;min-width:40px">
+            <i class="bi bi-alarm-fill"></i>
+        </div>
+        <div>
+            <div class="fw-600 text-muted" style="font-size:12px;text-transform:uppercase">Next Dose Due</div>
+            <div id="next-dose-countdown" style="font-size:15px">Loading...</div>
+        </div>
+        <a href="/reminders" class="btn btn-sm btn-primary ms-auto">
+            <i class="bi bi-bell-fill me-1"></i>Reminders
+        </a>
+    </div>
+</div>
+
+<!-- Stats Cards Row -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-2 col-md-4 col-6">
+        <div class="stat-card stat-card-blue">
+            <div class="stat-icon stat-icon-blue"><i class="bi bi-people-fill"></i></div>
+            <div class="stat-info">
+                <div class="stat-value" id="stat-total-elders">—</div>
+                <div class="stat-label">Total Elders</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-2 col-md-4 col-6">
+        <div class="stat-card stat-card-teal">
+            <div class="stat-icon stat-icon-green"><i class="bi bi-capsule"></i></div>
+            <div class="stat-info">
+                <div class="stat-value" id="stat-active-medicines">—</div>
+                <div class="stat-label">Active Medicines</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-2 col-md-4 col-6">
+        <div class="stat-card stat-card-green">
+            <div class="stat-icon stat-icon-green"><i class="bi bi-check2-circle"></i></div>
+            <div class="stat-info">
+                <div class="stat-value" id="stat-today-doses">—</div>
+                <div class="stat-label">Today's Doses</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-2 col-md-4 col-6">
+        <div class="stat-card stat-card-orange">
+            <div class="stat-icon stat-icon-orange"><i class="bi bi-graph-up"></i></div>
+            <div class="stat-info">
+                <div class="stat-value" id="stat-adherence-rate">—</div>
+                <div class="stat-label">30-Day Adherence</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-8 col-12">
+        <div class="stat-card stat-card-red">
+            <div class="stat-icon stat-icon-red"><i class="bi bi-bell-fill"></i></div>
+            <div class="stat-info">
+                <div class="stat-value" id="stat-unread-alerts">—</div>
+                <div class="stat-label">Unread Alerts</div>
+            </div>
+            <button onclick="toggleAlertsDropdown()" class="btn btn-sm ms-auto" style="background:rgba(255,255,255,0.2);color:white;border-radius:8px">
+                View Alerts
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Charts + Quick Add Row -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h5 class="fw-700 mb-0">Weekly Adherence</h5>
+                    <small class="text-muted">Doses taken vs missed (last 7 days)</small>
+                </div>
+                <div class="d-flex gap-2">
+                    <span id="chart-refresh-indicator" class="text-muted" style="font-size:12px"></span>
+                    <button onclick="loadDashboardData()" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                </div>
+            </div>
+            <div style="height:250px"><canvas id="adherenceChart"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card p-4 h-100">
+            <h5 class="fw-700 mb-3">Quick Actions</h5>
+            <div class="d-grid gap-2">
+                <a href="/elders/add" class="btn btn-outline-primary text-start px-3 py-2">
+                    <i class="bi bi-person-plus me-2 text-primary"></i>Add New Elder
+                </a>
+                <a href="/medicines/add" class="btn btn-outline-success text-start px-3 py-2">
+                    <i class="bi bi-capsule me-2 text-success"></i>Add Medicine
+                </a>
+                <a href="/schedules/add" class="btn btn-outline-warning text-start px-3 py-2">
+                    <i class="bi bi-calendar-plus me-2 text-warning"></i>Create Schedule
+                </a>
+                <a href="/reminders" class="btn btn-outline-danger text-start px-3 py-2">
+                    <i class="bi bi-bell-fill me-2 text-danger"></i>Voice Reminders
+                </a>
+                <a href="/chatbot" class="btn btn-outline-info text-start px-3 py-2">
+                    <i class="bi bi-chat-dots me-2 text-info"></i>Ask AI Assistant
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Today's Schedule + Alerts Row -->
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-700">
+                    <i class="bi bi-calendar3 me-2 text-primary"></i>Today's Medication Schedule
+                </span>
+                <div class="d-flex gap-2">
+                    <span class="badge bg-light text-dark border" id="schedule-time-badge"></span>
+                    <a href="/adherence" class="btn btn-sm btn-primary">Mark Doses</a>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Elder</th>
+                            <th>Medicine</th>
+                            <th>Dosage</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="today-schedule-tbody">
+                        <tr><td colspan="5" class="text-center py-4"><div class="spinner-healthcare mx-auto"></div></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <!-- Latest Daily Report Card -->
+        <div class="card mb-4" id="latest-report-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-700"><i class="bi bi-file-earmark-text me-2 text-success"></i>Latest Report</span>
+                <div class="d-flex gap-2">
+                    <a href="/reports" class="btn btn-sm btn-outline-primary">View All</a>
+                    <button onclick="sendReportNowDashboard()" class="btn btn-sm btn-success">
+                        <i class="bi bi-send me-1"></i>Send Now
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-3" id="latest-report-body">
+                <div class="text-center py-3"><div class="spinner-healthcare mx-auto"></div></div>
+            </div>
+        </div>
+
+        <!-- Recent Alerts -->
+        <div class="card" id="alerts-section">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-700"><i class="bi bi-bell-fill me-2 text-danger"></i>Recent Alerts</span>
+                <button onclick="markAllAlertsReadInline()" class="btn btn-sm btn-outline-secondary">Mark All Read</button>
+            </div>
+            <div class="card-body p-3" id="recent-alerts">
+                <div class="text-center py-4"><div class="spinner-healthcare mx-auto"></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

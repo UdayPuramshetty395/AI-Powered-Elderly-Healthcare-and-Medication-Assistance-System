@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+{% block title %}Settings — Notifications{% endblock %}
+{% block page_title %}Notification Settings{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+    <!-- Email Setup -->
+    <div class="col-lg-8 mx-auto">
+        <div class="card p-4">
+            <h5 class="fw-700 mb-1">
+                <i class="bi bi-envelope-fill me-2 text-primary"></i>Email Notifications
+            </h5>
+            <p class="text-muted small mb-4">
+                Caretaker receives an email every time a dose is taken or missed.
+            </p>
+
+            <!-- Gmail API Active Status (shown when configured) -->
+            <div id="gmail-api-active" class="alert alert-success d-flex gap-3 mb-4" style="border-radius:12px; display:none;">
+                <i class="bi bi-check-circle-fill" style="font-size:20px;flex-shrink:0"></i>
+                <div>
+                    <strong>✅ Gmail API Active</strong><br>
+                    <small>
+                        Email notifications are configured and working on ALL networks
+                        (college WiFi, corporate, mobile hotspot, etc.).<br>
+                        <span class="text-success fw-600">✓ Works on port 443 (always open)</span>
+                    </small>
+                </div>
+            </div>
+
+            <!-- SMTP Setup Form (shown when Gmail API not configured) -->
+            <div id="smtp-setup-form">
+                <div class="alert alert-info d-flex gap-3 mb-4" style="border-radius:12px">
+                    <i class="bi bi-info-circle-fill" style="font-size:20px;flex-shrink:0"></i>
+                    <div>
+                        <strong>Gmail Setup (Free)</strong><br>
+                        <small>
+                            1. Enable 2FA on your Gmail account<br>
+                            2. Go to <a href="https://myaccount.google.com/apppasswords" target="_blank">myaccount.google.com/apppasswords</a><br>
+                            3. Create an App Password → copy the 16-character code<br>
+                            4. Paste it as the password below<br>
+                            <span class="text-warning fw-600">⚠️ Note: Requires internet access on port 587 (use mobile hotspot if on college WiFi)</span>
+                        </small>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-600">Gmail Address</label>
+                    <input type="email" class="form-control" id="mail-username"
+                           placeholder="yourname@gmail.com">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-600">App Password <small class="text-muted">(16 characters)</small></label>
+                    <input type="password" class="form-control" id="mail-password"
+                           placeholder="xxxx xxxx xxxx xxxx">
+                </div>
+                <button onclick="saveEmailSettings()" class="btn btn-primary w-100">
+                    <i class="bi bi-save me-2"></i>Save & Test Email
+                </button>
+                <div id="email-status" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- How It Works -->
+    <div class="col-12">
+        <div class="card p-4">
+            <h5 class="fw-700 mb-3">
+                <i class="bi bi-clock-history me-2 text-warning"></i>How Automatic Reminders Work
+            </h5>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="p-3 rounded text-center h-100 d-flex flex-column align-items-center justify-content-between" style="background:#e3f2fd;min-height:160px">
+                        <div style="font-size:32px">⏰</div>
+                        <div class="fw-700 mt-2">8:00 AM</div>
+                        <div class="text-muted small">Scheduler fires automatically.<br>Voice plays + notification sent</div>
+                        <div class="badge bg-success mt-2">Level 1 — Gentle</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="p-3 rounded text-center h-100 d-flex flex-column align-items-center justify-content-between" style="background:#fff8e1;min-height:160px">
+                        <div style="font-size:32px">⚠️</div>
+                        <div class="fw-700 mt-2">8:02 AM</div>
+                        <div class="text-muted small">Not confirmed?<br>Stricter voice + high-priority alert</div>
+                        <div class="badge bg-warning text-dark mt-2">Level 2 — Firm</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="p-3 rounded text-center h-100 d-flex flex-column align-items-center justify-content-between" style="background:#ffebee;min-height:160px">
+                        <div style="font-size:32px">🚨</div>
+                        <div class="fw-700 mt-2">8:04 AM</div>
+                        <div class="text-muted small">Still not confirmed?<br>Full-screen popup + urgent voice</div>
+                        <div class="badge bg-danger mt-2">Level 3 — Critical</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="p-3 rounded text-center h-100 d-flex flex-column align-items-center justify-content-between" style="background:#f3e5f5;min-height:160px">
+                        <div style="font-size:32px">📧</div>
+                        <div class="fw-700 mt-2">8:12 AM</div>
+                        <div class="text-muted small">Auto-marked missed.<br>Email sent to caretaker</div>
+                        <div class="badge bg-purple mt-2" style="background:#7b1fa2!important">Email Alert</div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 p-3 rounded" style="background:#e8f5e9">
+                <strong>✅ Daily Summary Email</strong> — Sent every day at 9 PM with a full report of all doses taken and missed.
+            </div>
+            <div class="mt-2 p-3 rounded" style="background:#e3f2fd">
+                <strong>⏰ Reminder Interval: 2 minutes</strong> — Voice repeats every 2 minutes until medicine is confirmed.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Email Log Panel — shows sent/queued emails (visible even when SMTP blocked) -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-700">
+                    <i class="bi bi-inbox-fill me-2 text-primary"></i>
+                    Email Notification Log
+                    <span class="badge bg-secondary ms-2" id="email-log-count">0</span>
+                </span>
+                <button onclick="loadEmailLog()" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                </button>
+            </div>
+            <div id="email-log-container" class="p-3">
+                <p class="text-muted text-center py-3">
+                    <i class="bi bi-envelope me-2"></i>
+                    Emails will appear here when doses are taken or missed.
+                    <br><small>Works even when SMTP is blocked — shows what would be sent.</small>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+    .email-log-entry {
+        background: #fafbff;
+        word-break: break-word;
+    }
+
+    .email-log-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+    }
+
+    .email-log-header .email-log-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        flex: 1 1 280px;
+    }
+
+    .email-log-status {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        max-width: 100%;
+        white-space: normal;
+        line-height: 1.4;
+        flex-shrink: 0;
+    }
+
+    .email-log-meta {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        font-size: 13px;
+        color: #546e7a;
+    }
+
+    .email-log-body {
+        background: #f5f5f5;
+        padding: 12px;
+        border-radius: 8px;
+        font-size: 12px;
+        white-space: pre-wrap;
+        word-break: break-word;
+        overflow-x: auto;
+        margin-top: 8px;
+    }
+
+    @media (max-width: 768px) {
+        .email-log-header {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .email-log-header .email-log-title {
+            font-size: 1rem;
+            line-height: 1.35;
+        }
+
+        .email-log-status {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .email-log-meta {
+            flex-direction: column;
+            gap: 6px;
+        }
+    }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    if (!requireAuth()) return;
+    loadEmailLog();
+    setInterval(loadEmailLog, 30000);
+    checkGmailApiStatus();
+});
+
+async function saveEmailSettings() {
+    const username = document.getElementById('mail-username').value.trim();
+    const password = document.getElementById('mail-password').value.trim();
+    const statusDiv = document.getElementById('email-status');
+
+    if (!username || !password) {
+        statusDiv.innerHTML = '<div class="alert alert-warning">Please enter both email and password.</div>';
+        return;
+    }
+
+    statusDiv.innerHTML = '<div class="alert alert-info"><div class="spinner-border spinner-border-sm me-2"></div>Saving and sending test email...</div>';
+
+    const data = await API.post('/api/settings/email', { username, password });
+    if (data && data._ok) {
+        statusDiv.innerHTML = `<div class="alert alert-success">✅ ${data.message}</div>`;
+        loadEmailLog();
+    } else {
+        statusDiv.innerHTML = `<div class="alert alert-danger">❌ ${data?.error || 'Failed. Check credentials.'}</div>`;
+    }
+}
+
+async function loadEmailLog() {
+    const data = await API.get('/settings/email-log');
+    if (!data || !data._ok) return;
+
+    const container = document.getElementById('email-log-container');
+    const emails = data.emails || [];
+
+    document.getElementById('email-log-count').textContent = emails.length;
+
+    if (!emails.length) {
+        container.innerHTML = `<p class="text-muted text-center py-3">
+            <i class="bi bi-envelope me-2"></i>
+            No emails logged yet. Mark a dose as taken or missed to trigger an email.
+        </p>`;
+        return;
+    }
+
+    container.innerHTML = emails.map(e => {
+        const isBlocked = e.status === 'network_blocked';
+        const statusIcon = isBlocked ? '📤' : e.status === 'auth_error' ? '❌' : '✅';
+        const statusText = isBlocked
+            ? '<span class="badge bg-warning text-dark">Queued (SMTP blocked by network — use mobile hotspot to send)</span>'
+            : e.status === 'auth_error'
+            ? '<span class="badge bg-danger">Auth Failed</span>'
+            : '<span class="badge bg-success">Sent</span>';
+
+        const time = new Date(e.sent_at).toLocaleString('en-IN');
+
+        return `
+        <div class="border rounded p-3 mb-3 email-log-entry">
+            <div class="email-log-header">
+                <div class="email-log-title">
+                    <span style="font-size:20px">${statusIcon}</span>
+                    <strong>${e.subject}</strong>
+                </div>
+                <span class="email-log-status badge ${isBlocked ? 'bg-warning text-dark' : e.status === 'auth_error' ? 'bg-danger' : 'bg-success'}">
+                    ${isBlocked ? 'Queued (SMTP blocked by network — use mobile hotspot to send)' : e.status === 'auth_error' ? 'Auth Failed' : 'Sent'}
+                </span>
+            </div>
+            <div class="email-log-meta mb-2">
+                <span><i class="bi bi-envelope me-1"></i>To: ${e.to}</span>
+                <span><i class="bi bi-clock me-1"></i>${time}</span>
+            </div>
+            <details>
+                <summary style="cursor:pointer;color:#1976d2;font-size:13px">View email body</summary>
+                <pre class="email-log-body">${e.body}</pre>
+            </details>
+        </div>`;
+    }).join('');
+}
+
+// Auto-load email log on page load
+document.addEventListener('DOMContentLoaded', async () => {
+    if (!requireAuth()) return;
+    loadEmailLog();
+    // Refresh every 30 seconds
+    setInterval(loadEmailLog, 30000);
+    
+    // Check if Gmail API is configured
+    const status = await API.get('/settings/status');
+    if (status && status._ok && status.gmail_api_configured) {
+        document.getElementById('gmail-api-active').style.display = 'block';
+        document.getElementById('smtp-setup-form').style.display = 'none';
+    }
+});</script>
+{% endblock %}

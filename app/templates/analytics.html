@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+{% block title %}Analytics — Adherence & Risk{% endblock %}
+{% block page_title %}Medication Adherence Analytics{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <p class="text-muted mb-0">Real-time adherence tracking, risk scores, and behaviour patterns.</p>
+    <div class="d-flex gap-2">
+        <span class="badge bg-success-subtle text-success border border-success px-3 py-2">
+            <i class="bi bi-circle-fill me-1" style="font-size:8px;animation:blink 1.2s infinite"></i>Live
+        </span>
+    </div>
+</div>
+
+<!-- Elder Selector -->
+<div class="card p-3 mb-4">
+    <div class="row g-2 align-items-center">
+        <div class="col-md-4">
+            <select class="form-select" id="analytics-elder-select">
+                <option value="">All Elders (Summary)</option>
+            </select>
+        </div>
+        <div class="col-md-auto">
+            <button onclick="loadAnalytics()" class="btn btn-primary">
+                <i class="bi bi-graph-up me-2"></i>Load Analytics
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Multi-Elder Risk Table -->
+<div id="multi-elder-section">
+    <h5 class="fw-700 mb-3"><i class="bi bi-people-fill me-2 text-primary"></i>Elder Risk Overview</h5>
+    <div class="card mb-4">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Elder</th>
+                        <th>Age</th>
+                        <th>Risk Score</th>
+                        <th>Adherence Score</th>
+                        <th>Today</th>
+                        <th>Weekly</th>
+                        <th>Monthly</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="risk-table-body">
+                    <tr><td colspan="8" class="text-center py-4">
+                        <div class="spinner-healthcare mx-auto"></div>
+                    </td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Per-Elder Deep Analytics (shown when elder selected) -->
+<div id="elder-analytics-section" style="display:none">
+
+    <!-- KPI Cards -->
+    <div class="row g-3 mb-4" id="kpi-cards"></div>
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5 class="fw-700 mb-0">30-Day Adherence Trend</h5>
+                        <small class="text-muted">Daily doses taken vs total scheduled</small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button onclick="setChartRange(7)" id="btn-7d" class="btn btn-sm btn-outline-primary">7D</button>
+                        <button onclick="setChartRange(14)" id="btn-14d" class="btn btn-sm btn-outline-secondary">14D</button>
+                        <button onclick="setChartRange(30)" id="btn-30d" class="btn btn-sm btn-primary">30D</button>
+                    </div>
+                </div>
+                <div style="height:260px"><canvas id="trend-chart"></canvas></div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card p-4 h-100">
+                <h5 class="fw-700 mb-3">Missed Medicine Analysis</h5>
+                <div style="height:220px"><canvas id="missed-chart"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Behaviour Patterns -->
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card p-4">
+                <h5 class="fw-700 mb-3"><i class="bi bi-clock-history me-2 text-warning"></i>Top Missed Time Slots</h5>
+                <div id="missed-slots"></div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card p-4">
+                <h5 class="fw-700 mb-3"><i class="bi bi-activity me-2 text-primary"></i>Behaviour Summary</h5>
+                <div id="behaviour-summary"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentElderId = null;
+let fullChartData = [];
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (!requireAuth()) return;
+    loadElderDropdown();
+    loadMultiElderRisk();
+    setInterval(loadMultiElderRisk, 60000);
+});
+
+async function loadElderDropdown() {
+    const data = await API.get('/elders?per_page=100');
+    if (!data || !data._ok) return;
+    const select = document.getElementById('analytics-elder-select');
+    select.innerHTML = '<option value="">All Elders (Summary)</option>' +
+        data.elders.map(e => `<option value="${e.id}">${e.name} (${e.age}y)</option>`).join('');
+}
+
+async function loadMultiElderRisk() {
+    const data = await API.get('/analytics/dashboard');
+    if (!data || !data._ok) return;
+    const tbody = document.getElementById('risk-table-body');
+    if (!data.elders.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No elders found. Add elder profiles first.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = data.elders.map(e => {
+        const riskColor = e.risk_score > 70 ? 'danger' : e.risk_score > 40 ? 'warning' : 'success';
+        const adhColor = e.adherence_score >= 80 ? 'success' : e.adherence_score >= 60 ? 'warning' : 'danger';
+        const statusBadge = e.risk_score > 70
+            ? '<span class="badge bg-danger">High Risk</span>'
+            : e.risk_score > 40
+            ? '<span class="badge bg-warning text-dark">Medium Risk</span>'
+            : '<span class="badge bg-success">Low Risk</span>';
+        return `<tr style="cursor:pointer" onclick="selectElder(${e.elder_id}, '${e.elder_name}')">
+            <td><strong>${e.elder_name}</strong></td>
+            <td>${e.age}</td>
+            <td>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="progress flex-fill" style="height:8px;min-width:80px">
+                        <div class="progress-bar bg-${riskColor}" style="width:${e.risk_score}%"></div>
+                    </div>
+                    <span class="fw-700 text-${riskColor}">${e.risk_score}</span>
+                </div>
+            </td>
+            <td><span class="fw-700 text-${adhColor}">${e.adherence_score}%</span></td>
+            <td>${e.daily_rate}%</td>
+            <td>${e.weekly_rate}%</td>
+            <td>${e.monthly_rate}%</td>
+            <td>${statusBadge} ${e.missed_today > 0 ? `<span class="badge bg-danger ms-1">${e.missed_today} missed today</span>` : ''}</td>
+        </tr>`;
+    }).join('');
+}
+
+async function selectElder(elderId, name) {
+    currentElderId = elderId;
+    document.getElementById('analytics-elder-select').value = elderId;
+    await loadAnalytics();
+}
+
+async function loadAnalytics() {
+    const select = document.getElementById('analytics-elder-select');
+    const elderId = select.value || currentElderId;
+    if (!elderId) { await loadMultiElderRisk(); return; }
+    currentElderId = elderId;
+
+    document.getElementById('multi-elder-section').style.display = 'none';
+    document.getElementById('elder-analytics-section').style.display = 'block';
+
+    const [adh, risk, patterns] = await Promise.all([
+        API.get(`/analytics/adherence/${elderId}`),
+        API.get(`/analytics/risk/${elderId}`),
+        API.get(`/analytics/patterns/${elderId}`)
+    ]);
+
+    if (adh && adh._ok) {
+        renderKPIs(adh, risk);
+        fullChartData = adh.daily_chart;
+        renderTrendChart(fullChartData.slice(-30));
+        renderMissedChart(adh.missed_analysis);
+    }
+    if (patterns && patterns._ok) {
+        renderPatterns(patterns);
+    }
+}
+
+function renderKPIs(adh, risk) {
+    const riskColor = risk.risk_score > 70 ? 'danger' : risk.risk_score > 40 ? 'warning' : 'success';
+    const adhColor = adh.monthly.rate >= 80 ? 'success' : adh.monthly.rate >= 60 ? 'warning' : 'danger';
+    document.getElementById('kpi-cards').innerHTML = `
+        <div class="col-md-3 col-6">
+            <div class="stat-card stat-card-${adhColor}">
+                <div class="stat-icon stat-icon-green"><i class="bi bi-graph-up-arrow"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">${adh.monthly.rate}%</div>
+                    <div class="stat-label">Monthly Adherence</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card stat-card-blue">
+                <div class="stat-icon stat-icon-blue"><i class="bi bi-calendar-week"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">${adh.weekly.rate}%</div>
+                    <div class="stat-label">Weekly Adherence</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card stat-card-${riskColor === 'success' ? 'green' : riskColor === 'warning' ? 'orange' : 'red'}">
+                <div class="stat-icon stat-icon-${riskColor === 'success' ? 'green' : 'red'}"><i class="bi bi-shield-exclamation"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">${risk.risk_score}</div>
+                    <div class="stat-label">Risk Score</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card stat-card-red">
+                <div class="stat-icon stat-icon-red"><i class="bi bi-x-circle-fill"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value">${adh.monthly.missed}</div>
+                    <div class="stat-label">Missed (30 days)</div>
+                </div>
+            </div>
+        </div>`;
+}
+
+function setChartRange(days) {
+    ['7d','14d','30d'].forEach(d => {
+        document.getElementById(`btn-${d}`).className = `btn btn-sm btn-outline-secondary`;
+    });
+    document.getElementById(`btn-${days}d`).className = `btn btn-sm btn-primary`;
+    renderTrendChart(fullChartData.slice(-days));
+}
+
+function renderTrendChart(data) {
+    const ctx = document.getElementById('trend-chart');
+    if (window._trendChart) window._trendChart.destroy();
+    window._trendChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: data.map(d => d.day),
+            datasets: [
+                { label: 'Taken', data: data.map(d => d.taken), backgroundColor: 'rgba(67,160,71,0.8)', borderRadius: 4 },
+                { label: 'Missed', data: data.map(d => d.missed), backgroundColor: 'rgba(229,57,53,0.8)', borderRadius: 4 },
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' },
+                tooltip: {
+                    callbacks: {
+                        footer: items => `Adherence: ${data[items[0].dataIndex].rate}%`
+                    }
+                }
+            },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    });
+}
+
+function renderMissedChart(missedAnalysis) {
+    const ctx = document.getElementById('missed-chart');
+    if (window._missedChart) window._missedChart.destroy();
+    if (!missedAnalysis.length) {
+        ctx.parentElement.innerHTML = '<div class="text-center text-success py-5"><i class="bi bi-check-circle-fill" style="font-size:48px"></i><p class="mt-3">No missed medicines in 30 days!</p></div>';
+        return;
+    }
+    window._missedChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: missedAnalysis.map(m => m.medicine),
+            datasets: [{ data: missedAnalysis.map(m => m.count), backgroundColor: ['#e53935','#fb8c00','#1976d2','#43a047','#7b1fa2'] }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+    });
+}
+
+function renderPatterns(p) {
+    const slots = p.top_missed_time_slots || [];
+    document.getElementById('missed-slots').innerHTML = slots.length
+        ? slots.map(s => `
+            <div class="d-flex align-items-center gap-3 p-3 rounded mb-2" style="background:#fff3e0">
+                <i class="bi bi-clock-fill text-warning" style="font-size:24px"></i>
+                <div>
+                    <div class="fw-700">${s.label}</div>
+                    <small class="text-muted">${s.miss_count} missed dose(s)</small>
+                </div>
+            </div>`).join('')
+        : '<p class="text-muted">Not enough data yet</p>';
+
+    const trendColor = p.trend_7day === 'improving' ? 'success' : p.trend_7day === 'declining' ? 'danger' : 'info';
+    const trendIcon = p.trend_7day === 'improving' ? 'bi-arrow-up-circle-fill' : p.trend_7day === 'declining' ? 'bi-arrow-down-circle-fill' : 'bi-dash-circle-fill';
+    document.getElementById('behaviour-summary').innerHTML = `
+        <div class="mb-3 p-3 rounded" style="background:#f0f4f8">
+            <div class="row g-3">
+                <div class="col-6">
+                    <div class="fw-600 text-muted" style="font-size:12px">7-Day Trend</div>
+                    <div class="fw-700 text-${trendColor}">
+                        <i class="bi ${trendIcon} me-1"></i>${Utils.capitalize(p.trend_7day || 'stable')}
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="fw-600 text-muted" style="font-size:12px">Most Missed</div>
+                    <div class="fw-700">${p.most_missed_medicine || '—'}</div>
+                </div>
+                <div class="col-6">
+                    <div class="fw-600 text-muted" style="font-size:12px">Avg Delay</div>
+                    <div class="fw-700">${p.average_delay_minutes || 0} min</div>
+                </div>
+                <div class="col-6">
+                    <div class="fw-600 text-muted" style="font-size:12px">Records Analysed</div>
+                    <div class="fw-700">${p.total_records_analysed || 0}</div>
+                </div>
+            </div>
+        </div>
+        ${p.error ? `<p class="text-muted small">${p.error}</p>` : ''}`;
+}
+</script>
+{% endblock %}

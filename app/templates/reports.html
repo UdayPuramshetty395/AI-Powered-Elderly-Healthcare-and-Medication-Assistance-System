@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block title %}Daily Reports{% endblock %}
+{% block page_title %}Daily Health Reports{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <p class="text-muted mb-0">Automated daily medication adherence reports sent to caretakers.</p>
+    <button onclick="generateNow()" class="btn btn-primary">
+        <i class="bi bi-send-fill me-2"></i>Send Report Now
+    </button>
+</div>
+
+<!-- Latest Reports Cards -->
+<div class="row g-3 mb-4" id="latest-cards">
+    <div class="col-12 text-center py-4">
+        <div class="spinner-healthcare mx-auto"></div>
+        <p class="text-muted mt-2">Loading latest reports...</p>
+    </div>
+</div>
+
+<!-- Report History Table -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-700">
+            <i class="bi bi-clock-history me-2 text-primary"></i>Report History
+        </span>
+        <div class="d-flex gap-2">
+            <select class="form-select form-select-sm" id="filter-elder" style="width:auto">
+                <option value="">All Elders</option>
+            </select>
+            <button onclick="loadHistory()" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Elder</th>
+                    <th>Scheduled</th>
+                    <th>Taken</th>
+                    <th>Late</th>
+                    <th>Missed</th>
+                    <th>Reminders</th>
+                    <th>Adherence</th>
+                    <th>Email</th>
+                </tr>
+            </thead>
+            <tbody id="history-tbody">
+                <tr><td colspan="9" class="text-center py-4">
+                    <div class="spinner-healthcare mx-auto"></div>
+                </td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Generate Now Result -->
+<div id="generate-result" class="mt-3"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    if (!requireAuth()) return;
+    loadLatestReports();
+    loadHistory();
+    loadEldersDropdown();
+});
+
+async function loadLatestReports() {
+    const data = await API.get('/reports/latest');
+    const container = document.getElementById('latest-cards');
+    if (!data || !data._ok || !data.reports.length) {
+        container.innerHTML = `
+            <div class="col-12">
+                <div class="card p-4 text-center text-muted">
+                    <i class="bi bi-clipboard-x" style="font-size:40px"></i>
+                    <p class="mt-2">No reports yet. Reports are generated daily at 9 PM, or click "Send Report Now".</p>
+                </div>
+            </div>`;
+        return;
+    }
+    container.innerHTML = data.reports.map(r => {
+        const adhColor = r.adherence_percent >= 80 ? 'success'
+                       : r.adherence_percent >= 60 ? 'warning' : 'danger';
+        const adhEmoji = r.adherence_percent >= 80 ? '✅' : r.adherence_percent >= 60 ? '⚠️' : '🚨';
+        return `
+        <div class="col-md-6 col-lg-4">
+            <div class="card p-4 h-100 border-start border-4 border-${adhColor}">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h6 class="fw-700 mb-1">${r.elder_name}</h6>
+                        <small class="text-muted">${r.report_date || 'Today'}</small>
+                    </div>
+                    <span style="font-size:28px">${adhEmoji}</span>
+                </div>
+                <div class="row g-2 mb-3 text-center">
+                    <div class="col-3">
+                        <div class="p-2 rounded" style="background:#e3f2fd">
+                            <div class="fw-700 text-primary">${r.total_scheduled}</div>
+                            <small class="text-muted" style="font-size:10px">Total</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="p-2 rounded" style="background:#e8f5e9">
+                            <div class="fw-700 text-success">${r.total_taken}</div>
+                            <small class="text-muted" style="font-size:10px">Taken</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="p-2 rounded" style="background:#fff8e1">
+                            <div class="fw-700 text-warning">${r.total_taken_late}</div>
+                            <small class="text-muted" style="font-size:10px">Late</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="p-2 rounded" style="background:#ffebee">
+                            <div class="fw-700 text-danger">${r.total_missed}</div>
+                            <small class="text-muted" style="font-size:10px">Missed</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <div class="fw-700 text-${adhColor}" style="font-size:22px">
+                            ${r.adherence_percent}%
+                        </div>
+                        <small class="text-muted">Adherence</small>
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-600">${r.total_reminders}</div>
+                        <small class="text-muted">Reminders</small>
+                    </div>
+                </div>
+                <div class="progress mb-3" style="height:8px">
+                    <div class="progress-bar bg-${adhColor}" style="width:${r.adherence_percent}%"></div>
+                </div>
+                <div class="d-flex gap-2">
+                    <button onclick="sendReportForElder(${r.elder_id})"
+                            class="btn btn-sm btn-outline-primary flex-fill">
+                        <i class="bi bi-send me-1"></i>Send Email
+                    </button>
+                    <span class="badge ${r.email_sent ? 'bg-success' : 'bg-secondary'} d-flex align-items-center px-3">
+                        ${r.email_sent ? '📧 Sent' : '⏳ Pending'}
+                    </span>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+async function loadHistory() {
+    const elderId = document.getElementById('filter-elder').value;
+    let url = '/reports/history?per_page=30';
+    if (elderId) url += `&elder_id=${elderId}`;
+    const data = await API.get(url);
+    const tbody = document.getElementById('history-tbody');
+    if (!data || !data._ok || !data.reports.length) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">No reports found.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = data.reports.map(r => {
+        const adhColor = r.adherence_percent >= 80 ? 'success'
+                       : r.adherence_percent >= 60 ? 'warning' : 'danger';
+        return `<tr>
+            <td><strong>${r.report_date}</strong></td>
+            <td>${r.elder_name}</td>
+            <td>${r.total_scheduled}</td>
+            <td class="text-success fw-600">${r.total_taken}</td>
+            <td class="text-warning fw-600">${r.total_taken_late}</td>
+            <td class="text-danger fw-600">${r.total_missed}</td>
+            <td>${r.total_reminders}</td>
+            <td>
+                <span class="badge bg-${adhColor}-subtle text-${adhColor} border border-${adhColor}">
+                    ${r.adherence_percent}%
+                </span>
+            </td>
+            <td>
+                <span class="badge ${r.email_sent ? 'bg-success' : 'bg-secondary'}">
+                    ${r.email_sent ? '✅ Sent' : 'Pending'}
+                </span>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+async function loadEldersDropdown() {
+    const data = await API.get('/elders?per_page=100');
+    if (!data || !data._ok) return;
+    const select = document.getElementById('filter-elder');
+    select.innerHTML = '<option value="">All Elders</option>' +
+        data.elders.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+    select.addEventListener('change', loadHistory);
+}
+
+async function generateNow() {
+    const resultDiv = document.getElementById('generate-result');
+    resultDiv.innerHTML = '<div class="alert alert-info"><div class="spinner-border spinner-border-sm me-2"></div>Generating reports and sending emails...</div>';
+
+    const data = await API.post('/reports/generate-now', {});
+    if (data && data._ok) {
+        resultDiv.innerHTML = `<div class="alert alert-success">
+            <strong>✅ ${data.message}</strong>
+            <ul class="mb-0 mt-2">
+                ${data.reports.map(r => `<li>${r.elder_name}: ${r.total_taken}/${r.total_scheduled} taken — ${r.adherence}% adherence → ${r.email_to}</li>`).join('')}
+            </ul>
+        </div>`;
+        setTimeout(() => { loadLatestReports(); loadHistory(); }, 2000);
+    } else {
+        resultDiv.innerHTML = `<div class="alert alert-danger">❌ ${data?.error || 'Failed'}</div>`;
+    }
+}
+
+async function sendReportForElder(elderId) {
+    const data = await API.post('/reports/generate-now', { elder_id: elderId });
+    if (data && data._ok) {
+        Toast.success('Report sent!');
+        loadLatestReports();
+    } else {
+        Toast.error(data?.error || 'Failed to send report');
+    }
+}
+</script>
+{% endblock %}

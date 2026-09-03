@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Elderly Healthcare System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+<div class="auth-container">
+    <div class="auth-card" style="max-width:520px">
+        <div class="auth-logo">
+            <i class="bi bi-person-plus-fill"></i>
+        </div>
+        <h3 class="text-center fw-800 mb-1">Create Account</h3>
+        <p class="text-center text-muted mb-4">Join the elderly healthcare platform</p>
+
+        <form id="register-form" novalidate>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label" for="full_name">Full Name</label>
+                    <input type="text" class="form-control" id="full_name" placeholder="Your full name">
+                    <div class="invalid-feedback"></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="username">Username *</label>
+                    <input type="text" class="form-control" id="username" placeholder="Choose a username" required>
+                    <div class="invalid-feedback"></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="email">Email *</label>
+                    <input type="email" class="form-control" id="email" placeholder="your@email.com" required>
+                    <div class="invalid-feedback"></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="phone">Phone</label>
+                    <input type="tel" class="form-control" id="phone" placeholder="+91 98765 43210">
+                    <div class="invalid-feedback"></div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="role">Your Role *</label>
+                    <select class="form-select" id="role" required>
+                        <option value="caretaker">Caretaker / Healthcare Provider</option>
+                        <option value="family">Family Member</option>
+                        <option value="admin">Administrator</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="password">Password *</label>
+                    <div class="input-group">
+                        <input type="password" class="form-control border-end-0" id="password" placeholder="Min 8 characters" required>
+                        <button class="btn btn-light border toggle-password" type="button" data-target="#password">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div id="password-strength"></div>
+                    <div class="invalid-feedback"></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="confirm_password">Confirm Password *</label>
+                    <div class="input-group">
+                        <input type="password" class="form-control border-end-0" id="confirm_password" placeholder="Repeat password" required>
+                        <button class="btn btn-light border toggle-password" type="button" data-target="#confirm_password">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
+                    </div>
+                    <div class="invalid-feedback"></div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-2 fw-600 mt-4">
+                <i class="bi bi-check-lg me-2"></i>Create Account
+            </button>
+        </form>
+
+        <p class="text-center mt-3 mb-0">
+            Already have an account? <a href="/login" class="text-primary fw-600">Sign in</a>
+        </p>
+    </div>
+</div>
+
+<div id="toast-container" class="toast-container"></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+<script>document.addEventListener('DOMContentLoaded', () => redirectIfLoggedIn());</script>
+</body>
+</html>

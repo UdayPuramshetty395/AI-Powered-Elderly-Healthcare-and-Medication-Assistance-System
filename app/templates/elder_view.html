@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>My Medicines - Elderly Care</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root { --primary: #1565c0; --success: #2e7d32; --danger: #c62828; }
+
+        body {
+            font-size: 20px;
+            background: #e3f2fd;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .top-bar {
+            background: var(--primary);
+            color: white;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .top-bar h1 { font-size: 24px; margin: 0; font-weight: 700; }
+
+        #live-time {
+            font-size: 22px;
+            font-weight: 700;
+            background: rgba(255,255,255,0.2);
+            padding: 6px 16px;
+            border-radius: 20px;
+        }
+
+        .elder-card {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.10);
+            margin-bottom: 20px;
+        }
+
+        .dose-big-card {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.10);
+            border-left: 8px solid #1565c0;
+            margin-bottom: 16px;
+            transition: all 0.3s;
+        }
+
+        .dose-big-card.overdue { border-left-color: #c62828; background: #fff5f5; }
+        .dose-big-card.taken { border-left-color: #2e7d32; background: #f1f8e9; opacity: 0.75; }
+        .dose-big-card.due-soon { border-left-color: #e65100; background: #fff8f0; }
+
+        .medicine-name { font-size: 26px; font-weight: 700; color: #1a1a2e; }
+        .medicine-dose { font-size: 20px; color: #546e7a; }
+        .medicine-time { font-size: 28px; font-weight: 700; color: var(--primary); }
+
+        .btn-taken {
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            padding: 14px 32px;
+            font-size: 22px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .btn-taken:hover { background: #1b5e20; }
+
+        .btn-voice {
+            background: #7b1fa2;
+            color: white;
+            border: none;
+            border-radius: 16px;
+            padding: 14px 32px;
+            font-size: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .btn-voice:hover { background: #4a0072; }
+
+        .status-badge-big {
+            font-size: 18px;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-weight: 700;
+        }
+
+        .nav-bottom {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            display: flex;
+            border-top: 2px solid #e2e8f0;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            flex: 1;
+            padding: 14px 8px 10px;
+            text-align: center;
+            border: none;
+            background: white;
+            color: #546e7a;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav-btn.active { color: var(--primary); background: #e3f2fd; }
+        .nav-btn i { font-size: 28px; display: block; margin-bottom: 4px; }
+
+        .section { display: none; }
+        .section.active { display: block; }
+
+        .companion-bubble {
+            background: linear-gradient(135deg, #1565c0, #26a69a);
+            color: white;
+            border-radius: 20px 20px 20px 4px;
+            padding: 18px 22px;
+            font-size: 20px;
+            margin-bottom: 16px;
+        }
+
+        .user-bubble {
+            background: #e8f5e9;
+            color: #1a1a2e;
+            border-radius: 20px 20px 4px 20px;
+            padding: 18px 22px;
+            font-size: 20px;
+            margin-bottom: 16px;
+            margin-left: 40px;
+        }
+
+        .chat-input-big {
+            font-size: 20px;
+            padding: 16px;
+            border-radius: 16px;
+            border: 2px solid #90caf9;
+            width: 100%;
+        }
+
+        .btn-send-big {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            padding: 14px 28px;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .wellness-emoji-btn {
+            font-size: 44px;
+            border: 3px solid #e2e8f0;
+            border-radius: 16px;
+            background: white;
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex: 1;
+        }
+
+        .wellness-emoji-btn.selected { border-color: var(--primary); background: #e3f2fd; }
+
+        .content-wrap { padding: 20px 16px 90px; }
+
+        .alert-big {
+            border-radius: 16px;
+            padding: 20px;
+            font-size: 20px;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="top-bar">
+    <div>
+        <h1><i class="bi bi-heart-pulse-fill me-2"></i>My Health</h1>
+        <div id="top-date" style="font-size:16px;opacity:0.85"></div>
+    </div>
+    <div id="live-time">--:--</div>
+</div>
+
+<div class="content-wrap">
+
+    <!-- ===== MEDICINES SECTION ===== -->
+    <div class="section active" id="sec-medicines">
+        <h2 class="fw-700 mb-3" style="font-size:24px"><i class="bi bi-capsule me-2 text-primary"></i>Today's Medicines</h2>
+
+        <!-- Elder select (simple) -->
+        <div class="elder-card mb-3">
+            <label style="font-size:18px;font-weight:600;color:#546e7a">Select Patient</label>
+            <select class="form-select mt-2" id="ev-elder-select" style="font-size:20px;padding:12px">
+                <option value="">Choose...</option>
+            </select>
+        </div>
+
+        <div id="ev-doses-container">
+            <div class="text-center text-muted py-5" style="font-size:22px">
+                <i class="bi bi-capsule" style="font-size:48px;display:block;margin-bottom:16px;color:#90caf9"></i>
+                Please select a patient above
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== COMPANION CHAT ===== -->
+    <div class="section" id="sec-chat">
+        <h2 class="fw-700 mb-3" style="font-size:24px"><i class="bi bi-robot me-2 text-primary"></i>Talk to Assistant</h2>
+
+        <div class="elder-card mb-3">
+            <label style="font-size:18px;font-weight:600;color:#546e7a">Voice Language</label>
+            <select class="form-select mt-2" id="ev-chat-language" style="font-size:20px;padding:12px"
+                    onchange="evSetLanguage(this.value)">
+                <option value="en">English</option>
+                <option value="te">తెలుగు</option>
+            </select>
+        </div>
+
+        <div id="ev-chat-messages" style="min-height:300px;max-height:50vh;overflow-y:auto;margin-bottom:16px">
+            <div class="companion-bubble">
+                👋 Hello! I am your Health Assistant.<br><br>
+                You can ask me anything about your medicines, health, or just talk to me!<br><br>
+                Type your question below. 😊
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <input type="text" class="chat-input-big" id="ev-chat-input"
+                   placeholder="Type here or use voice...">
+            <button class="btn-send-big" onclick="evSendChat()">
+                <i class="bi bi-send-fill"></i>
+            </button>
+        </div>
+        <div class="mt-3 d-flex gap-2 flex-wrap">
+            <button class="btn btn-outline-primary" style="font-size:18px;border-radius:12px"
+                    onclick="evQuickChat('How am I doing today?')">How am I doing?</button>
+            <button class="btn btn-outline-success" style="font-size:18px;border-radius:12px"
+                    onclick="evQuickChat('What medicines should I take today?')">My medicines?</button>
+            <button class="btn btn-outline-warning" style="font-size:18px;border-radius:12px"
+                    onclick="evQuickChat('I am feeling lonely')">I feel lonely</button>
+            <button class="btn btn-outline-info" style="font-size:18px;border-radius:12px"
+                    onclick="evVoiceInput()"><i class="bi bi-mic-fill"></i> Voice</button>
+        </div>
+    </div>
+
+    <!-- ===== WELLNESS CHECK ===== -->
+    <div class="section" id="sec-wellness">
+        <h2 class="fw-700 mb-3" style="font-size:24px"><i class="bi bi-heart me-2 text-danger"></i>How Do You Feel?</h2>
+
+        <div class="elder-card mb-3">
+            <select class="form-select" id="ev-wellness-elder" style="font-size:20px;padding:12px">
+                <option value="">Choose patient...</option>
+            </select>
+        </div>
+
+        <div class="elder-card">
+            <p class="fw-700 mb-3" style="font-size:22px">😊 Mood Today</p>
+            <div class="d-flex gap-2 mb-4" id="ev-mood-btns">
+                <button class="wellness-emoji-btn" onclick="evSetMood(1)">😢</button>
+                <button class="wellness-emoji-btn" onclick="evSetMood(2)">😕</button>
+                <button class="wellness-emoji-btn" onclick="evSetMood(3)">😐</button>
+                <button class="wellness-emoji-btn" onclick="evSetMood(4)">😊</button>
+                <button class="wellness-emoji-btn" onclick="evSetMood(5)">😄</button>
+            </div>
+
+            <p class="fw-700 mb-2" style="font-size:22px">🤕 Pain: <span id="ev-pain-val">No Pain</span></p>
+            <input type="range" class="form-range mb-4" min="0" max="10" value="0"
+                   id="ev-pain" style="height:10px" oninput="evUpdatePain(this.value)">
+
+            <textarea class="form-control mb-4" id="ev-wellness-notes"
+                      style="font-size:20px;border-radius:16px;padding:16px"
+                      rows="3" placeholder="Any complaints? Headache, nausea..."></textarea>
+
+            <button onclick="evSubmitWellness()" class="btn-taken" style="font-size:22px">
+                <i class="bi bi-heart-fill me-2"></i>Save How I Feel
+            </button>
+
+            <div id="ev-wellness-response" class="companion-bubble mt-4" style="display:none"></div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Bottom Navigation -->
+<div class="nav-bottom">
+    <button class="nav-btn active" id="nav-medicines" onclick="evShowSection('medicines')">
+        <i class="bi bi-capsule"></i>Medicines
+    </button>
+    <button class="nav-btn" id="nav-chat" onclick="evShowSection('chat')">
+        <i class="bi bi-chat-dots-fill"></i>Assistant
+    </button>
+    <button class="nav-btn" id="nav-wellness" onclick="evShowSection('wellness')">
+        <i class="bi bi-heart-fill"></i>Wellness
+    </button>
+    <button class="nav-btn" onclick="window.location.href='/dashboard'">
+        <i class="bi bi-grid-fill"></i>Dashboard
+    </button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>
+let evMood = null;
+let evElders = [];
+const MOOD_LABELS = ['', 'Very Sad', 'Sad', 'Okay', 'Happy', 'Very Happy'];
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (!requireAuth()) return;
+    const savedLang = localStorage.getItem('preferred_lang') || 'te';
+    const langSelect = document.getElementById('ev-chat-language');
+    if (langSelect) langSelect.value = savedLang;
+    startClock();
+    loadEvElders();
+    setInterval(evCheckUpcomingDoses, 60000);
+});
+
+function startClock() {
+    function tick() {
+        const now = new Date();
+        document.getElementById('live-time').textContent =
+            now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+        document.getElementById('top-date').textContent =
+            now.toLocaleDateString('en-IN', {weekday:'long', day:'numeric', month:'long'});
+    }
+    tick();
+    setInterval(tick, 1000);
+}
+
+async function loadEvElders() {
+    const data = await API.get('/elders?per_page=100');
+    if (!data || !data._ok) return;
+    evElders = data.elders;
+    const opts = data.elders.map(e => `<option value="${e.id}" data-name="${e.name}">${e.name}</option>`).join('');
+    ['ev-elder-select','ev-wellness-elder','ev-reminder-elder'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '<option value="">Choose...</option>' + opts;
+    });
+    document.getElementById('ev-elder-select').addEventListener('change', evLoadDoses);
+}
+
+async function evLoadDoses() {
+    const elderId = document.getElementById('ev-elder-select').value;
+    const container = document.getElementById('ev-doses-container');
+    if (!elderId) { container.innerHTML = '<p class="text-center text-muted py-4">Select a patient</p>'; return; }
+
+    container.innerHTML = '<div class="text-center py-4" style="font-size:24px">Loading...</div>';
+    const data = await API.get(`/schedules/today/${elderId}`);
+    if (!data || !data._ok || !data.schedules.length) {
+        container.innerHTML = '<div class="elder-card text-center" style="font-size:22px;color:#546e7a"><i class="bi bi-check2-all" style="font-size:48px;color:#43a047;display:block"></i>All done for today! No more medicines due.</div>';
+        return;
+    }
+
+    const now = new Date();
+    const nowMins = now.getHours() * 60 + now.getMinutes();
+
+    container.innerHTML = data.schedules.map(s => {
+        const status = s.adherence_status || 'pending';
+        const [h, m] = s.scheduled_time.split(':');
+        const doseMins = parseInt(h) * 60 + parseInt(m);
+        const diff = doseMins - nowMins;
+
+        let cardClass = '';
+        let urgencyText = '';
+        if (status === 'taken') {
+            cardClass = 'taken';
+        } else if (diff < 0) {
+            cardClass = 'overdue';
+            urgencyText = `<div style="color:#c62828;font-size:18px;font-weight:700;animation:blink 1s infinite">⚠️ OVERDUE — Please take now!</div>`;
+        } else if (diff <= 15) {
+            cardClass = 'due-soon';
+            urgencyText = `<div style="color:#e65100;font-size:18px;font-weight:700">⏰ Due in ${diff} minutes</div>`;
+        }
+
+        const today = new Date().toISOString().split('T')[0];
+        return `
+        <div class="dose-big-card ${cardClass}">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    <div class="medicine-name">💊 ${s.medicine_name}</div>
+                    <div class="medicine-dose">${s.medicine_dosage || ''} • ${(s.meal_timing||'anytime').replace('_',' ')}</div>
+                </div>
+                <div class="medicine-time">${formatTime12(s.scheduled_time)}</div>
+            </div>
+            ${urgencyText}
+            ${status === 'taken'
+                ? `<div style="color:#2e7d32;font-size:22px;font-weight:700;margin-top:12px">✅ Already Taken</div>`
+                : `<div class="mt-3 row g-2">
+                    <div class="col-8">
+                        <button onclick="evMarkTaken(${s.id}, ${elderId}, ${s.medicine_id}, '${today}T${s.scheduled_time}')"
+                                class="btn-taken">✅ Mark as Taken</button>
+                    </div>
+                    <div class="col-4">
+                        <button onclick="evPlayOneReminder('${s.elder_name || ''}', '${s.medicine_name}', '${s.medicine_dosage||''}', '${formatTime12(s.scheduled_time)}', 'en')"
+                                style="background:#7b1fa2;color:white;border:none;border-radius:16px;padding:14px;font-size:20px;width:100%;cursor:pointer">
+                            🔊
+                        </button>
+                    </div>
+                </div>`}
+        </div>`;
+    }).join('');
+}
+
+async function evMarkTaken(schedId, elderId, medId, scheduledDt) {
+    const data = await API.post('/adherence/mark', {
+        schedule_id: schedId, elder_id: elderId,
+        medicine_id: medId, scheduled_datetime: scheduledDt, status: 'taken'
+    });
+    if (data && data._ok) {
+        showBigToast('✅ Medicine marked as taken!', 'success');
+        evLoadDoses();
+    }
+}
+
+function formatTime12(t) {
+    if (!t) return '';
+    const [h, m] = t.split(':');
+    const d = new Date(); d.setHours(h, m);
+    return d.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit', hour12:true});
+}
+
+// ===== CHAT =====
+async function evSendChat() {
+    const input = document.getElementById('ev-chat-input');
+    const msg = input.value.trim();
+    if (!msg) return;
+    input.value = '';
+    evAddChatMsg(msg, 'user');
+
+    const container = document.getElementById('ev-chat-messages');
+    const typing = document.createElement('div');
+    typing.className = 'companion-bubble';
+    typing.id = 'ev-typing';
+    typing.textContent = '...';
+    container.appendChild(typing);
+    container.scrollTop = container.scrollHeight;
+
+    const lang = document.getElementById('ev-chat-language')?.value || localStorage.getItem('preferred_lang') || 'en';
+    const data = await API.post('/chatbot/message', { message: msg, language: lang });
+    document.getElementById('ev-typing')?.remove();
+    if (data && data._ok) {
+        evAddChatMsg(data.response, 'bot');
+        // Speak the response
+        if ('speechSynthesis' in window) {
+            const utt = new SpeechSynthesisUtterance(data.response.replace(/[*#_]/g, '').substring(0, 200));
+            utt.lang = lang === 'te' ? 'te-IN' : 'en-IN';
+            utt.rate = 0.85;
+            window.speechSynthesis.speak(utt);
+        }
+    }
+}
+
+function evAddChatMsg(text, role) {
+    const container = document.getElementById('ev-chat-messages');
+    const div = document.createElement('div');
+    div.className = role === 'bot' ? 'companion-bubble' : 'user-bubble';
+    div.textContent = text;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+}
+
+function evQuickChat(msg) {
+    document.getElementById('ev-chat-input').value = msg;
+    evSendChat();
+}
+
+function evVoiceInput() {
+    if (!('webkitSpeechRecognition' in window)) {
+        showBigToast('Voice not supported in this browser', 'error'); return;
+    }
+    const rec = new webkitSpeechRecognition();
+    const lang = document.getElementById('ev-chat-language')?.value || localStorage.getItem('preferred_lang') || 'en';
+    rec.lang = lang === 'te' ? 'te-IN' : 'en-IN';
+    rec.onresult = e => {
+        document.getElementById('ev-chat-input').value = e.results[0][0].transcript;
+        evSendChat();
+    };
+    rec.onerror = () => showBigToast('Could not hear voice', 'error');
+    rec.start();
+    showBigToast('🎤 Listening...', 'info');
+}
+
+function evSetLanguage(lang) {
+    localStorage.setItem('preferred_lang', lang);
+    if (typeof setReminderLanguage === 'function') setReminderLanguage(lang);
+    showBigToast(lang === 'te' ? 'తెలుగు voice selected' : 'English voice selected', 'info');
+}
+
+// ===== WELLNESS =====
+function evSetMood(score) {
+    evMood = score;
+    document.querySelectorAll('.wellness-emoji-btn').forEach((btn, i) => {
+        btn.classList.toggle('selected', i + 1 === score);
+    });
+}
+
+function evUpdatePain(val) {
+    const labels = ['No Pain','1','Mild Pain','3','4','Moderate','6','Severe','8','9','Worst Pain'];
+    document.getElementById('ev-pain-val').textContent = labels[val] || val;
+}
+
+async function evSubmitWellness() {
+    const elderId = document.getElementById('ev-wellness-elder').value;
+    if (!elderId) { showBigToast('Please select a patient', 'warning'); return; }
+
+    const data = await API.post('/wellness', {
+        elder_id: parseInt(elderId),
+        mood_score: evMood,
+        mood_label: MOOD_LABELS[evMood] || 'Unknown',
+        pain_level: parseInt(document.getElementById('ev-pain').value),
+        notes: document.getElementById('ev-wellness-notes').value.trim()
+    });
+
+    if (data && data._ok) {
+        showBigToast('✅ Saved! Thank you.', 'success');
+        const resp = document.getElementById('ev-wellness-response');
+        resp.textContent = data.ai_response;
+        resp.style.display = 'block';
+        // Speak response
+        if ('speechSynthesis' in window) {
+            const utt = new SpeechSynthesisUtterance(data.ai_response);
+            utt.rate = 0.85;
+            window.speechSynthesis.speak(utt);
+        }
+    }
+}
+
+// ===== REMINDERS =====
+async function evPlayReminders(lang) {
+    const elderId = document.getElementById('ev-reminder-elder').value;
+    if (!elderId) { showBigToast('Please select a patient', 'warning'); return; }
+
+    const select = document.getElementById('ev-reminder-elder');
+    const elderName = select.options[select.selectedIndex].dataset.name ||
+                      select.options[select.selectedIndex].textContent;
+
+    const data = await API.get(`/schedules/today/${elderId}`);
+    if (!data || !data._ok || !data.schedules.length) {
+        showBigToast('No schedules found for today', 'info'); return;
+    }
+
+    const pending = data.schedules.filter(s => s.adherence_status !== 'taken');
+    if (!pending.length) {
+        showBigToast('All medicines taken today! 🎉', 'success'); return;
+    }
+
+    document.getElementById('ev-reminder-status').style.display = 'block';
+    let idx = 0;
+
+    function playNext() {
+        if (idx >= pending.length) {
+            document.getElementById('ev-reminder-text').textContent = '✅ All reminders played!';
+            return;
+        }
+        const s = pending[idx];
+        evPlayOneReminder(elderName, s.medicine_name, s.medicine_dosage || '', formatTime12(s.scheduled_time), lang);
+        const text = lang === 'te'
+            ? `${elderName} గారూ, ${s.medicine_name} ${s.medicine_dosage||''} తీసుకోండి.`
+            : `${elderName}, please take ${s.medicine_name} ${s.medicine_dosage || ''} now.`;
+        document.getElementById('ev-reminder-text').textContent = `🔊 ${s.medicine_name}`;
+        const utt = new SpeechSynthesisUtterance(text);
+        utt.rate = 0.8;
+        utt.onend = () => { idx++; setTimeout(playNext, 1500); };
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utt);
+    }
+    playNext();
+}
+
+function evPlayOneReminder(name, med, dose, time, lang) {
+    const text = lang === 'te'
+        ? `${name} గారూ, ${med} ${dose} తీసుకోండి. సమయం ${time}.`
+        : `${name}, it's time to take ${med} ${dose}. Scheduled time is ${time}.`;
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.rate = 0.85;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utt);
+}
+
+// ===== NAVIGATION =====
+function evShowSection(name) {
+    ['medicines','chat','wellness','reminders'].forEach(s => {
+        const section = document.getElementById(`sec-${s}`);
+        if (section) {
+            section.classList.toggle('active', s === name);
+        }
+        const nav = document.getElementById(`nav-${s}`);
+        if (nav) {
+            nav.classList.toggle('active', s === name);
+        }
+    });
+}
+
+async function evCheckUpcomingDoses() {
+    const data = await API.get('/dashboard/upcoming-doses?minutes=5');
+    if (!data || !data._ok || !data.doses.length) return;
+    data.doses.forEach(d => {
+        showBigToast(`⏰ Time for ${d.elder_name} to take ${d.medicine_name}!`, 'warning');
+    });
+}
+
+// Big toast notification
+function showBigToast(msg, type='info') {
+    const colors = {success:'#2e7d32', error:'#c62828', warning:'#e65100', info:'#1565c0'};
+    const el = document.createElement('div');
+    el.style.cssText = `position:fixed;top:80px;left:50%;transform:translateX(-50%);background:${colors[type]};color:white;padding:18px 32px;border-radius:20px;font-size:22px;font-weight:700;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.3);max-width:90vw;text-align:center`;
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 4000);
+}
+</script>
+
+<!-- Socket.IO for real-time reminders -->
+<script src="https://cdn.jsdelivr.net/npm/socket.io@4.7.2/client-dist/socket.io.min.js"></script>
+<!-- Main utils (TokenManager, API, Utils) -->
+<script src="/static/js/main.js"></script>
+<!-- Auto Voice Engine — plays automatically on reminder event -->
+<script src="/static/js/auto_voice.js"></script>
+<!-- PWA + Push + WebSocket handler -->
+<script src="/static/js/pwa.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    // Unlock audio immediately (login already gave us interaction)
+    unlockAudio();
+
+    // Init PWA — registers service worker + subscribes to push
+    await initPWA();
+
+    // When elder is selected, join their WebSocket room
+    // and check for any pending/active reminders — auto-plays voice
+    const elderSelect = document.getElementById('ev-elder-select');
+    const joinSelectedElder = async () => {
+        const elderId = elderSelect?.value;
+        if (elderId && _socket) {
+            _socket.emit('join_room', { room: `elder_${elderId}` });
+        }
+        if (elderId) {
+            // Check for any active reminders and auto-play voice
+            await checkAndPlayPendingReminders(parseInt(elderId));
+        }
+    };
+
+    if (elderSelect) {
+        elderSelect.addEventListener('change', joinSelectedElder);
+        await joinSelectedElder();
+    }
+});
+</script>
+</body>
+</html>

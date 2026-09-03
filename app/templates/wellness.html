@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+{% block title %}Wellness Check{% endblock %}
+{% block page_title %}Daily Wellness Check{% endblock %}
+
+{% block content %}
+<div class="mb-4 d-flex justify-content-between align-items-center">
+    <p class="text-muted mb-0">Record daily health and emotional wellness for your elders.</p>
+    <a href="/elder-view" class="btn btn-outline-primary">
+        <i class="bi bi-person-heart me-2"></i>Elder-Friendly View
+    </a>
+</div>
+
+<div class="row g-4">
+    <!-- Wellness Form -->
+    <div class="col-lg-7">
+        <div class="card p-4">
+            <h5 class="fw-700 mb-4"><i class="bi bi-heart-pulse me-2 text-danger"></i>How is the Elder Today?</h5>
+
+            <!-- Elder Select -->
+            <div class="mb-4">
+                <label class="form-label fw-600">Select Elder</label>
+                <select class="form-select" id="wellness-elder">
+                    <option value="">Choose an elder...</option>
+                </select>
+            </div>
+
+            <!-- Mood Scale -->
+            <div class="mb-4">
+                <label class="form-label fw-600">Mood Today</label>
+                <div class="d-flex gap-2 justify-content-between">
+                    <button type="button" onclick="setMood(1, 'Very Sad')" class="mood-btn" id="mood-1" title="Very Sad">
+                        😢<br><small>Very Sad</small>
+                    </button>
+                    <button type="button" onclick="setMood(2, 'Sad')" class="mood-btn" id="mood-2" title="Sad">
+                        😕<br><small>Sad</small>
+                    </button>
+                    <button type="button" onclick="setMood(3, 'Okay')" class="mood-btn" id="mood-3" title="Okay">
+                        😐<br><small>Okay</small>
+                    </button>
+                    <button type="button" onclick="setMood(4, 'Happy')" class="mood-btn" id="mood-4" title="Happy">
+                        😊<br><small>Happy</small>
+                    </button>
+                    <button type="button" onclick="setMood(5, 'Very Happy')" class="mood-btn" id="mood-5" title="Very Happy">
+                        😄<br><small>Very Happy</small>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pain Level -->
+            <div class="mb-4">
+                <label class="form-label fw-600">Pain Level: <span id="pain-label" class="text-primary">0 - No Pain</span></label>
+                <input type="range" class="form-range" min="0" max="10" step="1" value="0"
+                       id="pain-level" oninput="updatePainLabel(this.value)">
+                <div class="d-flex justify-content-between" style="font-size:11px;color:#94a3b8">
+                    <span>No Pain</span>
+                    <span>Mild</span>
+                    <span>Moderate</span>
+                    <span>Severe</span>
+                    <span>Worst</span>
+                </div>
+            </div>
+
+            <!-- Sleep & Appetite -->
+            <div class="row g-3 mb-4">
+                <div class="col-6">
+                    <label class="form-label fw-600">Sleep Quality</label>
+                    <select class="form-select" id="sleep-quality">
+                        <option value="">Select...</option>
+                        <option value="good">😴 Good</option>
+                        <option value="fair">😑 Fair</option>
+                        <option value="poor">😩 Poor</option>
+                    </select>
+                </div>
+                <div class="col-6">
+                    <label class="form-label fw-600">Appetite</label>
+                    <select class="form-select" id="appetite">
+                        <option value="">Select...</option>
+                        <option value="good">🍽️ Good</option>
+                        <option value="fair">😐 Fair</option>
+                        <option value="poor">😶 Poor</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="mb-4">
+                <label class="form-label fw-600">Any Complaints or Notes</label>
+                <textarea class="form-control" id="wellness-notes" rows="3"
+                          placeholder="e.g. Feeling dizzy, headache, cough..."></textarea>
+            </div>
+
+            <!-- Submit -->
+            <button onclick="submitWellness()" class="btn btn-primary btn-lg w-100" id="wellness-submit">
+                <i class="bi bi-heart-fill me-2"></i>Save Wellness Check
+            </button>
+        </div>
+
+        <!-- AI Response -->
+        <div class="card p-4 mt-4" id="ai-response-card" style="display:none">
+            <div class="d-flex gap-3 align-items-start">
+                <div style="width:44px;height:44px;min-width:44px;background:linear-gradient(135deg,#1976d2,#26a69a);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:20px">
+                    🤖
+                </div>
+                <div>
+                    <div class="fw-700 mb-1">AI Companion Response</div>
+                    <div id="ai-response-text" class="text-muted"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wellness History Panel -->
+    <div class="col-lg-5">
+        <!-- Today Status -->
+        <div class="card p-4 mb-4">
+            <h6 class="fw-700 mb-3"><i class="bi bi-calendar-check me-2 text-success"></i>Today's Status</h6>
+            <div id="today-wellness">
+                <p class="text-muted text-center py-2">Select an elder to view today's wellness.</p>
+            </div>
+        </div>
+
+        <!-- 7-Day Mood Trend -->
+        <div class="card p-4">
+            <h6 class="fw-700 mb-3"><i class="bi bi-graph-up me-2 text-primary"></i>7-Day Mood Trend</h6>
+            <div style="height:180px"><canvas id="moodChart"></canvas></div>
+            <div id="wellness-summary" class="mt-3"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let selectedMood = null;
+let selectedMoodLabel = '';
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (!requireAuth()) return;
+    loadWellnessElders();
+});
+
+async function loadWellnessElders() {
+    const data = await API.get('/elders?per_page=100');
+    if (!data || !data._ok) return;
+    const select = document.getElementById('wellness-elder');
+    select.innerHTML = '<option value="">Choose an elder...</option>' +
+        data.elders.map(e => `<option value="${e.id}">${e.name} (Age: ${e.age})</option>`).join('');
+    select.addEventListener('change', () => {
+        if (select.value) loadTodayWellness(select.value);
+    });
+}
+
+function setMood(score, label) {
+    selectedMood = score;
+    selectedMoodLabel = label;
+    for (let i = 1; i <= 5; i++) {
+        const btn = document.getElementById(`mood-${i}`);
+        btn.style.background = i === score ? '#1976d2' : '';
+        btn.style.color = i === score ? 'white' : '';
+        btn.style.transform = i === score ? 'scale(1.15)' : 'scale(1)';
+    }
+}
+
+function updatePainLabel(val) {
+    const labels = ['0 - No Pain','1','2 - Mild','3','4','5 - Moderate','6','7 - Severe','8','9','10 - Worst'];
+    document.getElementById('pain-label').textContent = labels[val] || val;
+}
+
+async function loadTodayWellness(elderId) {
+    const data = await API.get(`/wellness/today/${elderId}`);
+    const container = document.getElementById('today-wellness');
+    if (!data || !data._ok || !data.wellness) {
+        container.innerHTML = '<p class="text-muted text-center py-2"><i class="bi bi-dash-circle me-1"></i>No wellness check recorded today.</p>';
+        return;
+    }
+    const w = data.wellness;
+    const moods = ['', '😢', '😕', '😐', '😊', '😄'];
+    container.innerHTML = `
+        <div class="d-flex align-items-center gap-3 p-2 rounded" style="background:#f0fff4">
+            <div style="font-size:36px">${moods[w.mood_score] || '😐'}</div>
+            <div>
+                <div class="fw-700">${w.mood_label || 'Recorded'}</div>
+                <small class="text-muted">Pain: ${w.pain_level || 0}/10 | Sleep: ${w.sleep_quality || 'N/A'} | Appetite: ${w.appetite || 'N/A'}</small>
+                ${w.notes ? `<br><small class="text-info">${w.notes}</small>` : ''}
+                <br><small class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Recorded at ${new Date(w.checked_at).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'})}</small>
+            </div>
+        </div>`;
+    loadWellnessSummary(elderId);
+}
+
+async function loadWellnessSummary(elderId) {
+    const data = await API.get(`/wellness/summary/${elderId}`);
+    if (!data || !data._ok || !data.checks.length) return;
+
+    const moods = ['', '😢', '😕', '😐', '😊', '😄'];
+    const labels = data.checks.map(c => new Date(c.checked_at).toLocaleDateString('en-IN', {weekday:'short'}));
+    const scores = data.checks.map(c => c.mood_score || 3);
+
+    if (window.moodChart) window.moodChart.destroy();
+    const ctx = document.getElementById('moodChart');
+    window.moodChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Mood Score',
+                data: scores,
+                borderColor: '#1976d2',
+                backgroundColor: 'rgba(25,118,210,0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 6,
+                pointHoverRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { min: 1, max: 5, ticks: { stepSize: 1,
+                    callback: val => moods[val] || val } }
+            }
+        }
+    });
+
+    if (data.summary) {
+        const s = data.summary;
+        document.getElementById('wellness-summary').innerHTML = `
+            <div class="row g-2 text-center">
+                <div class="col-4">
+                    <div class="p-2 rounded" style="background:#e3f2fd">
+                        <div class="fw-700 text-primary">${moods[Math.round(s.avg_mood)] || '😐'}</div>
+                        <small class="text-muted" style="font-size:10px">Avg Mood</small>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="p-2 rounded" style="background:#fff3e0">
+                        <div class="fw-700 text-warning">${s.avg_pain}/10</div>
+                        <small class="text-muted" style="font-size:10px">Avg Pain</small>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="p-2 rounded" style="background:#e8f5e9">
+                        <div class="fw-700 text-success">${s.total_checks}</div>
+                        <small class="text-muted" style="font-size:10px">Days Tracked</small>
+                    </div>
+                </div>
+            </div>`;
+    }
+}
+
+async function submitWellness() {
+    const elderId = document.getElementById('wellness-elder').value;
+    if (!elderId) { Toast.warning('Please select an elder'); return; }
+
+    const btn = document.getElementById('wellness-submit');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+
+    const payload = {
+        elder_id: parseInt(elderId),
+        mood_score: selectedMood,
+        mood_label: selectedMoodLabel,
+        pain_level: parseInt(document.getElementById('pain-level').value),
+        sleep_quality: document.getElementById('sleep-quality').value,
+        appetite: document.getElementById('appetite').value,
+        notes: document.getElementById('wellness-notes').value.trim()
+    };
+
+    const data = await API.post('/wellness', payload);
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-heart-fill me-2"></i>Save Wellness Check';
+
+    if (data && data._ok) {
+        Toast.success('Wellness check recorded!');
+        document.getElementById('ai-response-text').textContent = data.ai_response;
+        document.getElementById('ai-response-card').style.display = 'block';
+        loadTodayWellness(elderId);
+        // Reset form
+        setMood(null, '');
+        document.getElementById('pain-level').value = 0;
+        updatePainLabel(0);
+        document.getElementById('wellness-notes').value = '';
+    } else {
+        Toast.error(data?.error || 'Failed to save wellness check');
+    }
+}
+</script>
+
+<style>
+.mood-btn {
+    flex: 1;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px 8px;
+    background: white;
+    font-size: 28px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+}
+.mood-btn:hover { border-color: #1976d2; transform: scale(1.1); }
+.mood-btn small { font-size: 10px; color: #64748b; display: block; margin-top: 4px; }
+</style>
+{% endblock %}

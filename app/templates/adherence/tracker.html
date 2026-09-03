@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block title %}Adherence Tracker{% endblock %}
+{% block page_title %}Medication Tracker{% endblock %}
+
+{% block content %}
+<!-- Elder Selector + Date -->
+<div class="card p-3 mb-4">
+    <div class="row g-2 align-items-center">
+        <div class="col-md-4">
+            <select class="form-select" id="filter-elder">
+                <option value="">All Elders</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <input type="date" class="form-control" id="filter-date" value="">
+        </div>
+        <div class="col-md-auto">
+            <button class="btn btn-primary" onclick="loadAdherenceData()">
+                <i class="bi bi-search me-2"></i>Load
+            </button>
+        </div>
+        <div class="col-md-auto ms-auto">
+            <button class="btn btn-outline-secondary" onclick="loadVoiceReminder()">
+                <i class="bi bi-volume-up me-2"></i>Voice Reminder
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Dose List -->
+    <div class="col-lg-8">
+        <div class="card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="fw-700 mb-0">
+                    <i class="bi bi-calendar3 me-2 text-primary"></i>Today's Doses
+                    <span class="badge bg-primary-subtle text-primary ms-2" id="dose-count"></span>
+                </h5>
+                <small class="text-muted" id="dose-date"></small>
+            </div>
+            <div id="doses-container">
+                <div class="text-center py-5">
+                    <div class="spinner-healthcare mx-auto"></div>
+                    <p class="mt-3 text-muted">Select an elder to view doses</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Panel -->
+    <div class="col-lg-4">
+        <!-- Adherence Summary -->
+        <div class="card p-4 mb-4">
+            <h6 class="fw-700 mb-3"><i class="bi bi-graph-up me-2 text-primary"></i>30-Day Summary</h6>
+            <div id="adherence-summary">
+                <p class="text-muted text-center">Select an elder to view stats</p>
+            </div>
+        </div>
+        <!-- Voice Reminder Audio -->
+        <div class="card p-4">
+            <h6 class="fw-700 mb-3"><i class="bi bi-volume-up me-2 text-success"></i>Voice Reminder</h6>
+            <div id="voice-player">
+                <p class="text-muted small">Select a dose and click "Voice Reminder" to generate audio</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/voice.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    if (!requireAuth()) return;
+    
+    // Set today's date as default
+    const dateInput = document.getElementById('filter-date');
+    if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+
+    // Load elder dropdown
+    await loadAdherenceElders();
+});
+
+async function loadAdherenceElders() {
+    const select = document.getElementById('filter-elder');
+    const data = await API.get('/elders?per_page=100');
+    if (!data || !data._ok) return;
+
+    select.innerHTML = '<option value="">All Elders</option>' + 
+        data.elders.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+    
+    select.addEventListener('change', () => {
+        if (select.value) loadAdherenceData();
+    });
+}
+
+async function loadAdherenceData() {
+    const elderId = document.getElementById('filter-elder').value;
+    const selectedDate = document.getElementById('filter-date').value;
+
+    if (!elderId) {
+        Toast.info('Please select an elder');
+        return;
+    }
+
+    document.getElementById('doses-container').innerHTML = '<div class="text-center py-4"><div class="spinner-healthcare mx-auto"></div></div>';
+
+    // Load today's schedule with adherence status
+    const data = await API.get(`/schedules/today/${elderId}`);
+    if (!data || !data._ok) {
+        Toast.error('Failed to load schedule');
+        return;
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('dose-date').textContent = selectedDate || today;
+    document.getElementById('dose-count').textContent = data.schedules.length + ' doses';
+
+    renderDoses(data.schedules, today);
+    await loadAdherenceSummary(elderId);
+}
+
+function renderDoses(schedules, today) {
+    const container = document.getElementById('doses-container');
+    
+    if (!schedules.length) {
+        container.innerHTML = '<div class="empty-state"><i class="bi bi-calendar-x"></i><p>No doses scheduled for today</p></div>';
+        return;
+    }
+
+    container.innerHTML = schedules.map(s => {
+        const status = s.adherence_status || 'pending';
+        const scheduledDt = `${today}T${s.scheduled_time}`;
+        return `
+            <div class="dose-card ${status}" id="dose-card-${s.id}">
+                <div class="dose-time">${Utils.formatTime(s.scheduled_time)}</div>
+                <div class="flex-1">
+                    <div class="fw-600">${s.medicine_name}</div>
+                    <small class="text-muted">${s.medicine_dosage} • ${(s.meal_timing || 'anytime').replace('_',' ')}</small>
+                    ${s.notes ? `<br><small class="text-info">${s.notes}</small>` : ''}
+                </div>
+                <div class="d-flex flex-column gap-1 align-items-end">
+                    <span class="dose-status-badge ${status}">${Utils.capitalize(status)}</span>
+                    ${status === 'pending' || status === 'missed' ? `
+                        <div class="d-flex gap-1 mt-1">
+                            <button onclick="markDose(${s.id}, ${s.elder_id}, ${s.medicine_id}, '${scheduledDt}', 'taken')"
+                                    class="btn btn-sm btn-success" style="font-size:11px;padding:3px 8px">
+                                ✓ Taken
+                            </button>
+                            <button onclick="markDose(${s.id}, ${s.elder_id}, ${s.medicine_id}, '${scheduledDt}', 'skipped')"
+                                    class="btn btn-sm btn-outline-warning" style="font-size:11px;padding:3px 8px">
+                                Skip
+                            </button>
+                        </div>` : 
+                        status === 'taken' ? `<small class="text-success"><i class="bi bi-check-circle-fill"></i> Taken</small>` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+async function markDose(scheduleId, elderId, medicineId, scheduledDatetime, status) {
+    const data = await API.post('/adherence/mark', {
+        schedule_id: scheduleId,
+        elder_id: elderId,
+        medicine_id: medicineId,
+        scheduled_datetime: scheduledDatetime,
+        status: status
+    });
+
+    if (data && data._ok) {
+        Toast.success(`Dose marked as ${status}`);
+        loadAdherenceData();
+    } else {
+        Toast.error(data?.error || 'Failed to mark dose');
+    }
+}
+
+async function loadAdherenceSummary(elderId) {
+    const data = await API.get(`/adherence/stats/${elderId}?days=30`);
+    if (!data || !data._ok) return;
+
+    const rate = data.adherence_rate;
+    const color = Utils.adherenceColor(rate);
+
+    document.getElementById('adherence-summary').innerHTML = `
+        <div class="text-center mb-3">
+            <div class="adherence-value adherence-${color}" style="font-size:36px">${rate}%</div>
+            <small class="text-muted">30-day adherence rate</small>
+        </div>
+        <div class="progress mb-3" style="height:8px">
+            <div class="progress-bar bg-${color}" style="width:${rate}%"></div>
+        </div>
+        <div class="row g-2 text-center">
+            <div class="col-4">
+                <div class="p-2 rounded" style="background:#e8f5e9">
+                    <div class="fw-700 text-success">${data.taken}</div>
+                    <small class="text-muted" style="font-size:10px">Taken</small>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="p-2 rounded" style="background:#ffebee">
+                    <div class="fw-700 text-danger">${data.missed}</div>
+                    <small class="text-muted" style="font-size:10px">Missed</small>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="p-2 rounded" style="background:#fff8e1">
+                    <div class="fw-700 text-warning">${data.skipped}</div>
+                    <small class="text-muted" style="font-size:10px">Skipped</small>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+async function loadVoiceReminder() {
+    const elderId = document.getElementById('filter-elder').value;
+    if (!elderId) {
+        Toast.info('Please select an elder first');
+        return;
+    }
+    // Trigger voice via voice.js
+    generateVoiceReminder(elderId);
+}
+</script>
+{% endblock %}

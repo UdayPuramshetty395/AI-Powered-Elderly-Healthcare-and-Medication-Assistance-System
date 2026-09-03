@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Elder Detail{% endblock %}
+{% block page_title %}Elder Profile{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-2 mb-4">
+    <a href="/elders" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
+    <span class="text-muted">Back to Elder Profiles</span>
+</div>
+
+<!-- Elder Header -->
+<div class="card p-4 mb-4">
+    <div class="row align-items-center">
+        <div class="col-auto">
+            <div class="elder-avatar" id="elder-avatar" style="width:80px;height:80px;font-size:34px;margin:0">E</div>
+        </div>
+        <div class="col">
+            <h3 class="fw-800 mb-1" id="elder-name">Loading...</h3>
+            <p class="text-muted mb-2" id="elder-subtitle"></p>
+            <div class="d-flex gap-2">
+                <a href="/medicines/add" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-lg me-1"></i>Add Medicine
+                </a>
+                <a href="/schedules/add" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-calendar-plus me-1"></i>Add Schedule
+                </a>
+            </div>
+        </div>
+        <!-- Stats -->
+        <div class="col-lg-6">
+            <div class="row g-3 text-center">
+                <div class="col-4">
+                    <div class="p-3 rounded-3" style="background:#e3f2fd">
+                        <div class="fw-800" style="font-size:24px;color:#1976d2" id="stat-medicines">—</div>
+                        <small class="text-muted">Medicines</small>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="p-3 rounded-3" style="background:#e8f5e9">
+                        <div class="fw-800" style="font-size:24px;color:#43a047" id="stat-doses-taken">—</div>
+                        <small class="text-muted">Doses Taken</small>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="p-3 rounded-3" style="background:#fff8e1">
+                        <div class="fw-800 adherence-value" style="font-size:24px" id="stat-adherence">—</div>
+                        <small class="text-muted">Adherence</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Elder Details -->
+    <div class="col-lg-4">
+        <div class="card p-4 mb-4">
+            <h5 class="fw-700 mb-3"><i class="bi bi-person me-2 text-primary"></i>Profile Details</h5>
+            <div id="elder-details">
+                <div class="spinner-healthcare mx-auto"></div>
+            </div>
+        </div>
+        <!-- Medicines List -->
+        <div class="card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-700 mb-0"><i class="bi bi-capsule me-2 text-success"></i>Medicines</h5>
+                <a href="/medicines/add" class="btn btn-sm btn-outline-success">+ Add</a>
+            </div>
+            <div id="medicines-list">
+                <div class="spinner-healthcare mx-auto"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Charts and Schedules -->
+    <div class="col-lg-8">
+        <!-- Adherence Chart -->
+        <div class="card p-4 mb-4">
+            <h5 class="fw-700 mb-3"><i class="bi bi-bar-chart me-2 text-primary"></i>7-Day Adherence</h5>
+            <div style="height:220px"><canvas id="adherence-chart"></canvas></div>
+        </div>
+
+        <!-- Today's Schedule -->
+        <div class="card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-700 mb-0"><i class="bi bi-clock me-2 text-warning"></i>Today's Schedule</h5>
+                <a href="/adherence" class="btn btn-sm btn-primary">Track Doses</a>
+            </div>
+            <div id="schedules-list">
+                <div class="spinner-healthcare mx-auto"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/elder.js') }}"></script>
+<script>
+    document.body.dataset.page = 'elder-detail';
+    document.body.dataset.elderId = '{{ elder_id }}';
+</script>
+{% endblock %}

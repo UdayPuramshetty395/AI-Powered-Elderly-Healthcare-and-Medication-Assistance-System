@@ -12,8 +12,18 @@ class AdherenceRecord(db.Model):
     medicine_id = db.Column(db.Integer, db.ForeignKey('medicines.id'), nullable=False, index=True)
     scheduled_datetime = db.Column(db.DateTime, nullable=False, index=True)
     taken_datetime = db.Column(db.DateTime, nullable=True)
-    status = db.Column(db.Enum('taken', 'taken_late', 'missed', 'skipped', 'pending'),
-                       nullable=False, default='pending')
+    status = db.Column(
+        db.Enum(
+            'taken',
+            'taken_late',
+            'missed',
+            'skipped',
+            'pending',
+            name='adherence_status_enum'
+        ),
+        nullable=False,
+        default='pending'
+    )
     notes = db.Column(db.Text, nullable=True)
     recorded_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)

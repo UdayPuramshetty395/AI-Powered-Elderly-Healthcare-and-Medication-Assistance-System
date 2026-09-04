@@ -9,7 +9,15 @@ class Elder(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(150), nullable=False)
     age = db.Column(db.Integer, nullable=False)
-    gender = db.Column(db.Enum('male', 'female', 'other'), nullable=False)
+    gender = db.Column(
+        db.Enum(
+            'male',
+            'female',
+            'other',
+            name='gender_enum'
+        ),
+        nullable=False
+    )
     blood_group = db.Column(db.String(10), nullable=True)
     medical_conditions = db.Column(db.Text, nullable=True)
     allergies = db.Column(db.Text, nullable=True)

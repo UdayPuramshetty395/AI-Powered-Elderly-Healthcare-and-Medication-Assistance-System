@@ -11,8 +11,19 @@ class Medicine(db.Model):
     generic_name = db.Column(db.String(200), nullable=True)
     dosage = db.Column(db.String(100), nullable=False)
     frequency = db.Column(db.String(100), nullable=False)  # e.g. "Once daily", "Twice daily"
-    route = db.Column(db.Enum('oral', 'injection', 'topical', 'inhalation', 'sublingual', 'other'),
-                     nullable=False, default='oral')
+    route = db.Column(
+        db.Enum(
+            'oral',
+            'injection',
+            'topical',
+            'inhalation',
+            'sublingual',
+            'other',
+            name='medicine_route_enum'
+        ),
+        nullable=False,
+        default='oral'
+    )
     elder_id = db.Column(db.Integer, db.ForeignKey('elders.id'), nullable=False, index=True)
     prescribed_by = db.Column(db.String(150), nullable=True)
     start_date = db.Column(db.Date, nullable=True, default=date.today)

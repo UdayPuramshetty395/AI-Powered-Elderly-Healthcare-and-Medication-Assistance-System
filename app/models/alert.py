@@ -26,8 +26,17 @@ class Alert(db.Model):
     is_read = db.Column(db.Boolean, default=False, nullable=False)
     sent_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     read_at = db.Column(db.DateTime, nullable=True)
-    severity = db.Column(db.Enum('low', 'medium', 'high', 'critical'), 
-                        nullable=False, default='medium')
+    severity = db.Column(
+        db.Enum(
+            'low',
+            'medium',
+            'high',
+            'critical',
+            name='alert_severity_enum'
+        ),
+        nullable=False,
+        default='medium'
+    )
     related_medicine_id = db.Column(db.Integer, db.ForeignKey('medicines.id'), nullable=True)
     related_schedule_id = db.Column(db.Integer, db.ForeignKey('medicine_schedules.id'), nullable=True)
 

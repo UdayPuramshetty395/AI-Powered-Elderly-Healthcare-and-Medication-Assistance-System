@@ -25,8 +25,16 @@ class ReminderState(db.Model):
     next_reminder_at = db.Column(db.DateTime, nullable=True)
 
     # resolved = taken/missed, active = awaiting confirmation
-    status = db.Column(db.Enum('active', 'snoozed', 'resolved'),
-                       nullable=False, default='active')
+    status = db.Column(
+        db.Enum(
+            'active',
+            'snoozed',
+            'resolved',
+            name='reminder_state_status_enum'
+        ),
+        nullable=False,
+        default='active'
+    )
 
     last_reminded_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)

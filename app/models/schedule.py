@@ -11,10 +11,29 @@ class MedicineSchedule(db.Model):
     elder_id = db.Column(db.Integer, db.ForeignKey('elders.id'), nullable=False, index=True)
     scheduled_time = db.Column(db.Time, nullable=False)
     day_of_week = db.Column(db.String(20), nullable=True)  # 'all', 'monday', 'tuesday', etc.
-    recurrence = db.Column(db.Enum('daily', 'weekly', 'monthly', 'as_needed'), 
-                          nullable=False, default='daily')
-    meal_timing = db.Column(db.Enum('before_meal', 'after_meal', 'with_meal', 'anytime'),
-                           nullable=True, default='anytime')
+    recurrence = db.Column(
+        db.Enum(
+            'daily',
+            'weekly',
+            'monthly',
+            'as_needed',
+            name='recurrence_enum'
+        ),
+        nullable=False,
+        default='daily'
+    )
+    
+    meal_timing = db.Column(
+        db.Enum(
+            'before_meal',
+            'after_meal',
+            'with_meal',
+            'anytime',
+            name='meal_timing_enum'
+        ),
+        nullable=True,
+        default='anytime'
+    )
     notes = db.Column(db.Text, nullable=True)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)

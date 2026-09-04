@@ -1,1 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
 
+# Virtual Environment
+.venv/
+venv/
+env/
+
+# Environment Variables
+.env
+
+# Gmail Credentials & Tokens
+gmail_credentials.json
+gmail_token.json
+.agent_credentials.json
+
+# Database Files
+*.db
+*.sqlite
+*.sqlite3
+
+# Flask Instance Folder
+instance/
+
+# IDE Files
+.vscode/
+.idea/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary Files
+*.tmp
+*.temp
+
+# Build Files
+build/
+dist/

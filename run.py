@@ -25,7 +25,8 @@ if __name__ == '__main__':
         app,
         host='0.0.0.0',
         port=int(os.environ.get('PORT', 5000)),
-        debug=os.environ.get('FLASK_ENV', 'development') == 'development',
-        use_reloader=False,   # APScheduler conflicts with reloader
-        log_output=False
+        debug=False,
+        use_reloader=False,
+        log_output=False,
+        allow_unsafe_werkzeug=True
     )

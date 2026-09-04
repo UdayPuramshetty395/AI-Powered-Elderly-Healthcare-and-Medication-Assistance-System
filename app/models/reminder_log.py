@@ -20,8 +20,16 @@ class ReminderLog(db.Model):
     text_en         = db.Column(db.Text, nullable=True)
     fired_at        = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     acknowledged_at = db.Column(db.DateTime, nullable=True)
-    status = db.Column(db.Enum('fired', 'acknowledged', 'missed'),
-                       nullable=False, default='fired')
+    status = db.Column(
+        db.Enum(
+            'fired',
+            'acknowledged',
+            'missed',
+            name='reminder_log_status_enum'
+        ),
+        nullable=False,
+        default='fired'
+    )
 
     def to_dict(self):
         return {

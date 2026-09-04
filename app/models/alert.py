@@ -9,9 +9,19 @@ class Alert(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     elder_id = db.Column(db.Integer, db.ForeignKey('elders.id'), nullable=False, index=True)
     caretaker_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
-    alert_type = db.Column(db.Enum('missed_dose', 'low_adherence', 'emergency', 
-                                   'appointment', 'refill_needed', 'general'),
-                          nullable=False, default='general')
+    alert_type = db.Column(
+        db.Enum(
+            'missed_dose',
+            'low_adherence',
+            'emergency',
+            'appointment',
+            'refill_needed',
+            'general',
+            name='alert_type_enum'
+        ),
+        nullable=False,
+        default='general'
+    )
     message = db.Column(db.Text, nullable=False)
     is_read = db.Column(db.Boolean, default=False, nullable=False)
     sent_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
